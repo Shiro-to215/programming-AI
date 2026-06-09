@@ -11,7 +11,6 @@ from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
-import asyncio
 
 # 同じフォルダからインポート
 from gemini_client import create_client, get_python_syntax_stream
@@ -67,8 +66,8 @@ async def ask_syntax(query: SyntaxQuery):
     try:
         async def generate():
             async for chunk in get_python_syntax_stream(gemini_client, query.query, query.language):
-                yield chunk
-                await asyncio.sleep(0.01)
+                if chunk:
+                    yield chunk
 
         return StreamingResponse(generate(), media_type="text/plain")
     except Exception as e:
