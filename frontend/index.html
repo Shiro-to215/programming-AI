@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Programming AI - 競プロ構文アシスタント</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>🤖 Programming AI</h1>
+            <p>Python/C++ 構文アシスタント</p>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Tab Navigation -->
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="ask">構文を聞く</button>
+                <button class="tab-btn" data-tab="library">保存済み構文</button>
+            </div>
+
+            <!-- Tab 1: Ask AI -->
+            <section id="ask-tab" class="tab-content active">
+                <div class="ask-section">
+                    <div class="language-selector">
+                        <label for="language">言語:</label>
+                        <select id="language">
+                            <option value="python">Python</option>
+                            <option value="cpp">C++</option>
+                        </select>
+                    </div>
+
+                    <div class="input-area">
+                        <textarea id="query" placeholder="例: 二分探索のやり方を教えて" rows="3"></textarea>
+                        <button id="ask-btn" class="btn btn-primary">✨ 構文を聞く</button>
+                    </div>
+
+                    <!-- Response Area -->
+                    <div id="response-area" class="response-area hidden">
+                        <div class="response-header">
+                            <h3>AI の回答</h3>
+                            <button id="save-btn" class="btn btn-secondary">💾 保存</button>
+                        </div>
+                        <div id="response-content" class="response-content"></div>
+                        <div id="loading" class="loading hidden">
+                            <div class="spinner"></div>
+                            <p>考え中...</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab 2: Syntax Library -->
+            <section id="library-tab" class="tab-content">
+                <div class="library-section">
+                    <div class="library-header">
+                        <input type="text" id="search-box" class="search-box" placeholder="構文を検索...">
+                        <button id="refresh-btn" class="btn btn-secondary">🔄 更新</button>
+                    </div>
+
+                    <div id="syntaxes-list" class="syntaxes-list">
+                        <p class="empty-message">保存済み構文がありません</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal for Save Syntax -->
+    <div id="save-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>構文を保存</h2>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="save-title" placeholder="タイトル（例: 二分探索）">
+                <textarea id="save-code" placeholder="コード" rows="5"></textarea>
+                <textarea id="save-explanation" placeholder="説明（オプション）" rows="3"></textarea>
+                <input type="text" id="save-tags" placeholder="タグ（カンマ区切り）">
+            </div>
+            <div class="modal-footer">
+                <button id="cancel-save" class="btn btn-secondary">キャンセル</button>
+                <button id="confirm-save" class="btn btn-primary">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for View Syntax -->
+    <div id="view-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="view-title">構文</h2>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="syntax-detail">
+                    <p><strong>言語:</strong> <span id="view-language"></span></p>
+                    <p><strong>作成日:</strong> <span id="view-date"></span></p>
+                    <pre id="view-code"></pre>
+                    <p id="view-explanation"></p>
+                    <div id="view-tags" class="tags"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="delete-syntax" class="btn btn-danger">削除</button>
+                <button id="close-view" class="btn btn-secondary">閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="db.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
