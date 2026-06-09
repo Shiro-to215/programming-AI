@@ -89,8 +89,7 @@ function setupEventListeners() {
     closeViewBtn.addEventListener('click', closeModals);
 }
 
-// ============ ASK AI FUNCTIONALITY ============
-// ============ ASK AI FUNCTIONALITY ============
+// ============ ASK AI FUNCTIONALITY ===========
 async function askSyntax() {
     const query = queryInput.value.trim();
     const language = languageSelect.value;
@@ -100,13 +99,13 @@ async function askSyntax() {
         return;
     }
 
-    // Show loading
+    // UI初期化
     responseArea.classList.remove('hidden');
     loadingDiv.classList.remove('hidden');
     responseContent.innerHTML = '';
     currentResponse = '';
-    saveBtn.classList.add('hidden'); // ボタン連打対策で一度非表示に
-    askBtn.disabled = true;          // 連打防止
+    saveBtn.classList.add('hidden');
+    askBtn.disabled = true;
 
     try {
         const response = await fetch(`${API_BASE}/ask`, {
@@ -121,10 +120,9 @@ async function askSyntax() {
         });
 
         if (!response.ok) {
-            throw new Error(`API error: ${response.status}`);
+            throw new Error(`サーバーエラー (ステータスコード: ${response.status})`);
         }
 
-        // Handle streaming response
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let buffer = '';
@@ -137,20 +135,22 @@ async function askSyntax() {
 
             buffer += decoder.decode(value, { stream: true });
             currentResponse = buffer;
-            
-            // 💡 変換したHTMLを画面にしっかりと映し出します
             responseContent.innerHTML = renderMarkdown(buffer);
         }
 
-        // 💡 AIの出力がすべて終わったら、隠れていた「保存ボタン」を表示します
         saveBtn.classList.remove('hidden');
 
     } catch (error) {
         console.error('Error:', error);
         loadingDiv.classList.add('hidden');
-        responseContent.innerHTML = `<p style="color: var(--danger);">エラーが発生しました: ${error.message}</p>`;
+        
+        // 💡 修正点：iPadでも絶対にエラー内容がわかるようにポップアップで強制表示します
+        alert(`❌ エラーが発生しました\n原因: ${error.message}\n\n※もし「サーバーエラー 500」が出る場合は、VercelのGEMINI_API_KEYの設定（大文字・小文字、余計なスペースがないか）を確認してください。`);
+        
+        // 画面にもシンプルな赤文字で残します
+        responseContent.innerHTML = `<p style="color: red; font-weight: bold; padding: 10px; background: #fff3f3; border-radius: 5px;">【通信エラー】${error.message}</p>`;
     } finally {
-        askBtn.disabled = false; // ボタンを再度押せるように戻す
+        askBtn.disabled = false;
     }
 }
 
