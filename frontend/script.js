@@ -249,7 +249,7 @@ async function saveSyntax() {
         // Vercel上ではSQLiteファイルへの書き込み制限で失敗する可能性が高いですが、
         // 失敗してもキャッチ（catch）して、エラー画面を出さずにそのまま進めます
         try {
-            await fetch(`${API_BASE}/save-syntax`, {
+            await fetch(`${API_BASE}/syntax`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
