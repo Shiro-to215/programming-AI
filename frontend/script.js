@@ -225,8 +225,8 @@ async function saveSyntax() {
     }
 
     try {
-        // Save to local DB first
-        const localSyntax = await syntaxDB.add({
+        // 1. まずブラウザ側（IndexedDB）に確実に保存する
+        await syntaxDB.add({
             title,
             language,
             code,
@@ -234,7 +234,9 @@ async function saveSyntax() {
             tags
         });
 
-        // Try to sync with backend
+        // 2. サーバー（Vercel）への保存を試みる
+        // Vercel上ではSQLiteファイルへの書き込み制限で失敗する可能性が高いですが、
+        // 失敗してもキャッチ（catch）して、エラー画面を出さずにそのまま進めます
         try {
             await fetch(`${API_BASE}/save-syntax`, {
                 method: 'POST',
@@ -250,18 +252,20 @@ async function saveSyntax() {
                 })
             });
         } catch (err) {
-            console.warn('Backend sync failed, saved locally only', err);
+            console.warn('サーバーへの同期はスキップされました（ローカルには安全に保存されています）:', err);
         }
 
+        // 3. 画面を閉じて、ライブラリタブに切り替える
         closeSaveModal();
         alert('構文を保存しました！');
         
-        // Switch to library tab and refresh
-        document.querySelector('[data-tab="library"]').click();
+        const libraryTab = document.querySelector('[data-tab="library"]');
+        if (libraryTab) libraryTab.click();
         await loadSyntaxes();
+        
     } catch (error) {
         console.error('Save error:', error);
-        alert('保存に失敗しました');
+        alert('ローカルへの保存自体に失敗しました');
     }
 }
 
