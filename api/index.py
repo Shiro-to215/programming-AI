@@ -70,16 +70,11 @@ def root():
 async def ask_syntax(request: SyntaxQuery):
     """
     Ask AI for syntax explanation
-    
-    Args:
-        query: User's question about syntax
-        language: Programming language (default: python)
-    
-    Returns:
-        Streamed response with syntax explanation
+    ...
     """
     try:
         async def generate():
+            # 💡 ここが普通の for になっています
             for chunk in get_python_syntax_stream(gemini_client, request.query, request.language):
                 yield chunk
         
