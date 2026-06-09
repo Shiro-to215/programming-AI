@@ -2,8 +2,8 @@
 import os
 import sys
 
-# 💡 Vercel環境でのインポートエラーを防ぐための検索パス追加
-# apiフォルダ自体をシステム検索パスの先頭に強制追加します
+# 💡 Vercelのインポートエラー（ModuleNotFoundError）を完璧に防ぐための記述
+# 自分（index.py）がいる「apiフォルダ」の絶対パスを、Pythonの検索パスの最優先（先頭）に強制追加します
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, current_dir)
 
@@ -14,14 +14,14 @@ from pydantic import BaseModel
 from typing import List, Optional
 import asyncio
 
-# 同じフォルダからインポート
+# 💡 検索パスを上に追加したことで、同じフォルダのモジュールが確実に読み込めるようになります
 from gemini_client import create_client, get_python_syntax_stream
 from database import (
     init_db, save_syntax, get_all_syntaxes, search_syntaxes, 
     get_syntax_by_id, update_syntax, delete_syntax
 )
 
-# 🚨 関数（def）や条件文（try）の中に隠さず、一番外側の左端で定義します
+# 🚨 関数（def）や try の中に入り込まないよう、一番外側の左端（インデントなし）で定義してください
 app = FastAPI(title="Programming AI Assistant")
 
 # Add CORS middleware for frontend access
@@ -34,7 +34,7 @@ app.add_middleware(
 )
 
 # Initialize database on startup
-# init_db()  # <-- VercelではSQLiteのファイル書き込みがエラーになるためコメントアウトのままでOKです
+# init_db()  # <-- コメントアウト（頭に#）のままでOKです
 
 # Initialize Gemini client
 api_key = os.getenv("GEMINI_API_KEY")
