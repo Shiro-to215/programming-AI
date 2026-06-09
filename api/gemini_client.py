@@ -1,6 +1,6 @@
 """Gemini API client for competitive programming syntax assistance"""
 from google import genai
-from typing import Generator, Any
+from typing import Any
 
 # Initialize Gemini client
 def create_client(api_key: str):
@@ -29,7 +29,7 @@ Format: Use markdown with clear sections."""
     return response.text
 
 
-async def get_python_syntax_stream(client, query: str, language: str = "python") -> Any:
+async def get_python_syntax_stream(client, query: str, language: str = "python"):
     """Get Python syntax explanation from Gemini with streaming (Async version)"""
     system_prompt = f"""You are a competitive programming expert specializing in {language}.
 Your task is to provide:
