@@ -2,9 +2,10 @@
 import os
 import sys
 
-# 💡 Vercelのインポートエラーを防ぐための検索パス追加
-# ファイルの一番上の、どの関数にも属さない場所に記述します
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# 💡 Vercel環境でのインポートエラーを防ぐための検索パス追加
+# apiフォルダ自体をシステム検索パスの先頭に強制追加します
+current_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, current_dir)
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
@@ -20,8 +21,7 @@ from database import (
     get_syntax_by_id, update_syntax, delete_syntax
 )
 
-# 🚨 ここが最重要です！
-# どこの関数（def）の中にも入っていない、一番外側の左端（インデントなし）で定義してください
+# 🚨 関数（def）や条件文（try）の中に隠さず、一番外側の左端で定義します
 app = FastAPI(title="Programming AI Assistant")
 
 # Add CORS middleware for frontend access
@@ -34,7 +34,7 @@ app.add_middleware(
 )
 
 # Initialize database on startup
-# init_db()  # <-- VercelではエラーになるためコメントアウトのままでOKです
+# init_db()  # <-- VercelではSQLiteのファイル書き込みがエラーになるためコメントアウトのままでOKです
 
 # Initialize Gemini client
 api_key = os.getenv("GEMINI_API_KEY")
@@ -42,8 +42,6 @@ if not api_key:
     raise ValueError("GEMINI_API_KEY environment variable not set")
 
 gemini_client = create_client(api_key)
-
-# （これ以降の Pydantic models や @app.post などの処理はそのまま触らなくて大丈夫です）
 
 
 # Pydantic models
