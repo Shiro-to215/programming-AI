@@ -1,4 +1,8 @@
 {
-  "buildCommand": "pip install -r backend/requirements.txt",
-  "outputDirectory": "frontend"
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
 }
