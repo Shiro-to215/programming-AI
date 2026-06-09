@@ -70,12 +70,19 @@ def root():
 async def ask_syntax(request: SyntaxQuery):
     """
     Ask AI for syntax explanation
-    ...
+    
+    Args:
+        query: User's question about syntax
+        language: Programming language (default: python)
+    
+    Returns:
+        Streamed response with syntax explanation
     """
     try:
         async def generate():
-            # 💡 ここが普通の for になっています
-            for chunk in get_python_syntax_stream(gemini_client, request.query, request.language):
+            # 💡 async for に変更し、受け取る関数を非同期（非同期ジェネレータ）に対応させます
+            async range_stream = get_python_syntax_stream(gemini_client, request.query, request.language)
+            async for chunk in range_stream:
                 yield chunk
         
         return StreamingResponse(generate(), media_type="text/plain")
