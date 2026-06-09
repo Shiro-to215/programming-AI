@@ -3,7 +3,7 @@
  */
 
 // API Base URL
-const API_BASE = process.env.API_BASE || 'http://localhost:8000/api';
+const API_BASE = '/api';
 
 // DOM Elements
 const tabs = document.querySelectorAll('.tab-btn');
