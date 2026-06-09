@@ -28,7 +28,7 @@ app.add_middleware(
 )
 
 # Initialize database on startup
-init_db()
+# init_db()
 
 # Initialize Gemini client
 api_key = os.getenv("GEMINI_API_KEY")
