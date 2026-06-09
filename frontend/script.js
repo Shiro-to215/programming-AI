@@ -134,7 +134,13 @@ async function askSyntax() {
 
             buffer += decoder.decode(value, { stream: true });
             currentResponse = buffer;
-            renderMarkdown(buffer);
+            
+            // 💡 修正点：renderMarkdownで変換したHTMLを、実際に画面（responseContent）に流し込みます
+            responseContent.innerHTML = renderMarkdown(buffer);
+        }
+
+        // 💡 修正点：すべての文字が出終わったら、隠れていた「保存ボタン」を表示します
+        saveBtn.classList.remove('hidden');
         }
     } catch (error) {
         console.error('Error:', error);
