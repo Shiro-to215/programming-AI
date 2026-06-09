@@ -2,8 +2,7 @@
 import os
 import sys
 
-# 💡 Vercelのインポートエラー（ModuleNotFoundError）を完璧に防ぐための記述
-# 自分（index.py）がいる「apiフォルダ」の絶対パスを、Pythonの検索パスの最優先（先頭）に強制追加します
+# Vercel環境でのインポートエラーを防ぐための検索パス追加
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, current_dir)
 
@@ -14,14 +13,14 @@ from pydantic import BaseModel
 from typing import List, Optional
 import asyncio
 
-# 💡 検索パスを上に追加したことで、同じフォルダのモジュールが確実に読み込めるようになります
+# 同じフォルダからインポート
 from gemini_client import create_client, get_python_syntax_stream
 from database import (
     init_db, save_syntax, get_all_syntaxes, search_syntaxes, 
     get_syntax_by_id, update_syntax, delete_syntax
 )
 
-# 🚨 関数（def）や try の中に入り込まないよう、一番外側の左端（インデントなし）で定義してください
+# 一番外側の左端で定義
 app = FastAPI(title="Programming AI Assistant")
 
 # Add CORS middleware for frontend access
@@ -32,9 +31,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Initialize database on startup
-# init_db()  # <-- コメントアウト（頭に#）のままでOKです
 
 # Initialize Gemini client
 api_key = os.getenv("GEMINI_API_KEY")
@@ -65,39 +61,22 @@ class SyntaxUpdate(BaseModel):
     tags: Optional[List[str]] = None
 
 
-# Routes
-@app.get("/")
-def root():
-    """Health check endpoint"""
-    return {"status": "ok", "message": "Programming AI Assistant API"}
-
-
 @app.post("/api/ask")
-async def ask_syntax(request: SyntaxQuery):
-    """
-    Ask AI for syntax explanation
-    
-    Args:
-        query: User's question about syntax
-        language: Programming language (default: python)
-    
-    Returns:
-        Streamed response with syntax explanation
-    """
+async def ask_syntax(query: SyntaxQuery):
+    """Ask Gemini about syntax and get a streamed response"""
     try:
         async def generate():
-            # 💡 async for に変更し、受け取る関数を非同期（非同期ジェネレータ）に対応させます
-            async range_stream = get_python_syntax_stream(gemini_client, request.query, request.language)
-            async for chunk in range_stream:
+            async for chunk in get_python_syntax_stream(gemini_client, query.query, query.language):
                 yield chunk
-        
+                await asyncio.sleep(0.01)
+
         return StreamingResponse(generate(), media_type="text/plain")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/api/save-syntax")
-def save_new_syntax(syntax: SyntaxCreate):
+@app.post("/api/syntax")
+def create_syntax(syntax: SyntaxCreate):
     """Save a syntax to database"""
     try:
         result = save_syntax(
@@ -114,16 +93,16 @@ def save_new_syntax(syntax: SyntaxCreate):
 
 @app.get("/api/syntaxes")
 def get_syntaxes(language: Optional[str] = None):
-    """Get all saved syntaxes, optionally filtered by language"""
+    """Get all saved syntaxes"""
     try:
-        syntaxes = get_all_syntaxes(language)
-        return {"syntaxes": syntaxes}
+        results = get_all_syntaxes(language)
+        return {"results": results}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/api/search")
-def search_syntax(q: str, language: Optional[str] = None):
+@app.get("/api/syntax/search")
+def search(q: str, language: Optional[str] = None):
     """Search syntaxes by keyword"""
     try:
         results = search_syntaxes(q, language)
@@ -170,7 +149,7 @@ def update_existing_syntax(syntax_id: int, syntax: SyntaxUpdate):
 def delete_existing_syntax(syntax_id: int):
     """Delete a syntax"""
     try:
-        delete_syntax(syntax_id)
-        return {"message": "Syntax deleted successfully"}
+        result = delete_syntax(syntax_id)
+        return {"success": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
