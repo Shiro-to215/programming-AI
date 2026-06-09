@@ -89,7 +89,7 @@ function setupEventListeners() {
     closeViewBtn.addEventListener('click', closeModals);
 }
 
-// ============ ASK AI FUNCTIONALITY ===========
+// ============ ASK AI FUNCTIONALITY ============
 async function askSyntax() {
     const query = queryInput.value.trim();
     const language = languageSelect.value;
@@ -134,8 +134,21 @@ async function askSyntax() {
             if (done) break;
 
             buffer += decoder.decode(value, { stream: true });
-            currentResponse = buffer;
-            responseContent.innerHTML = renderMarkdown(buffer);
+            
+            // 💡 iPad(Safari)用に届いた「data: 〇〇」という特殊な形式から、AIの文字だけを抜き出す処理
+            const lines = buffer.split('\n');
+            let tempResponse = '';
+            
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    tempResponse += line.slice(6);
+                }
+            }
+            
+            if (tempResponse) {
+                currentResponse = tempResponse;
+                responseContent.innerHTML = renderMarkdown(currentResponse);
+            }
         }
 
         saveBtn.classList.remove('hidden');
@@ -143,11 +156,7 @@ async function askSyntax() {
     } catch (error) {
         console.error('Error:', error);
         loadingDiv.classList.add('hidden');
-        
-        // 💡 修正点：iPadでも絶対にエラー内容がわかるようにポップアップで強制表示します
-        alert(`❌ エラーが発生しました\n原因: ${error.message}\n\n※もし「サーバーエラー 500」が出る場合は、VercelのGEMINI_API_KEYの設定（大文字・小文字、余計なスペースがないか）を確認してください。`);
-        
-        // 画面にもシンプルな赤文字で残します
+        alert(`❌ エラーが発生しました\n原因: ${error.message}`);
         responseContent.innerHTML = `<p style="color: red; font-weight: bold; padding: 10px; background: #fff3f3; border-radius: 5px;">【通信エラー】${error.message}</p>`;
     } finally {
         askBtn.disabled = false;
