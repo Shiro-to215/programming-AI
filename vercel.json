@@ -1,14 +1,4 @@
 {
   "buildCommand": "pip install -r backend/requirements.txt",
-  "functions": {
-    "backend/api/index.py": {
-      "runtime": "python3.9"
-    }
-  },
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/backend/api/index.py"
-    }
-  ]
+  "outputDirectory": "frontend"
 }
