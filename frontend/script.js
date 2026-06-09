@@ -90,6 +90,7 @@ function setupEventListeners() {
 }
 
 // ============ ASK AI FUNCTIONALITY ============
+// ============ ASK AI FUNCTIONALITY ============
 async function askSyntax() {
     const query = queryInput.value.trim();
     const language = languageSelect.value;
@@ -104,6 +105,8 @@ async function askSyntax() {
     loadingDiv.classList.remove('hidden');
     responseContent.innerHTML = '';
     currentResponse = '';
+    saveBtn.classList.add('hidden'); // ボタン連打対策で一度非表示に
+    askBtn.disabled = true;          // 連打防止
 
     try {
         const response = await fetch(`${API_BASE}/ask`, {
@@ -135,17 +138,19 @@ async function askSyntax() {
             buffer += decoder.decode(value, { stream: true });
             currentResponse = buffer;
             
-            // 💡 修正点：renderMarkdownで変換したHTMLを、実際に画面（responseContent）に流し込みます
+            // 💡 変換したHTMLを画面にしっかりと映し出します
             responseContent.innerHTML = renderMarkdown(buffer);
         }
 
-        // 💡 修正点：すべての文字が出終わったら、隠れていた「保存ボタン」を表示します
+        // 💡 AIの出力がすべて終わったら、隠れていた「保存ボタン」を表示します
         saveBtn.classList.remove('hidden');
-        }
+
     } catch (error) {
         console.error('Error:', error);
         loadingDiv.classList.add('hidden');
         responseContent.innerHTML = `<p style="color: var(--danger);">エラーが発生しました: ${error.message}</p>`;
+    } finally {
+        askBtn.disabled = false; // ボタンを再度押せるように戻す
     }
 }
 
