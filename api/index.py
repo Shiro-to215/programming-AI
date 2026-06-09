@@ -67,9 +67,11 @@ async def ask_syntax(query: SyntaxQuery):
         async def generate():
             async for chunk in get_python_syntax_stream(gemini_client, query.query, query.language):
                 if chunk:
-                    yield chunk
+                    # 💡 iPad(Safari)でもデータが細切れだと認識できるように、頭に「data: 」をつけ、末尾に改行を2つ入れます
+                    yield f"data: {chunk}\n\n"
 
-        return StreamingResponse(generate(), media_type="text/plain")
+        # 💡 media_type を Safariが対応している "text/event-stream" に変更します
+        return StreamingResponse(generate(), media_type="text/event-stream")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
