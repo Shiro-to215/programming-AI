@@ -1,6 +1,6 @@
 """Gemini API client for competitive programming syntax assistance"""
 from google import genai
-from typing import Generator
+from typing import AsyncGenerator
 
 # Initialize Gemini client
 def create_client(api_key: str):
@@ -11,14 +11,6 @@ def create_client(api_key: str):
 def get_python_syntax(client, query: str, language: str = "python") -> str:
     """
     Get Python syntax explanation from Gemini
-    
-    Args:
-        client: Gemini client instance
-        query: User's question about syntax
-        language: Programming language (default: python)
-    
-    Returns:
-        AI response with syntax explanation
     """
     system_prompt = f"""You are a competitive programming expert specializing in {language}.
 Your task is to provide:
@@ -31,25 +23,18 @@ Format: Use markdown with clear sections."""
 
     prompt = f"{system_prompt}\n\nUser Question: {query}"
     
+    # モデル名を最新の安定版 'gemini-2.5-flash' に修正
     response = client.models.generate_content(
-        model="gemini-3.5-flash",
+        model="gemini-2.5-flash",
         contents=prompt
     )
     
     return response.text
 
 
-def get_python_syntax_stream(client, query: str, language: str = "python") -> Generator:
+async def get_python_syntax_stream(client, query: str, language: str = "python") -> AsyncGenerator[str, None]:
     """
-    Get Python syntax explanation from Gemini with streaming
-    
-    Args:
-        client: Gemini client instance
-        query: User's question about syntax
-        language: Programming language (default: python)
-    
-    Yields:
-        Streamed text chunks
+    Get Python syntax explanation from Gemini with streaming (Async version)
     """
     system_prompt = f"""You are a competitive programming expert specializing in {language}.
 Your task is to provide:
@@ -62,11 +47,13 @@ Format: Use markdown with clear sections."""
 
     prompt = f"{system_prompt}\n\nUser Question: {query}"
     
-    response = client.models.generate_content_stream(
-        model="gemini-3.5-flash",
+    # クライアントの非同期版（.aio）を使ってストリーミングを呼び出します
+    response = await client.aio.models.generate_content_stream(
+        model="gemini-2.5-flash",
         contents=prompt
     )
     
-    for chunk in response:
+    # 非同期で順番に送られてくるテキストの塊（チャンク）を返す
+    async for chunk in response:
         if chunk.text:
             yield chunk.text
