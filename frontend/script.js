@@ -145,21 +145,66 @@ async function askSyntax() {
 
 // ============ MARKDOWN RENDERING ============
 function renderMarkdown(text) {
-    let html = text
-        .replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
-        .replace(/`([^`]+)`/g, '<code>$1</code>')
-        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\n/g, '<br>');
-
-    responseContent.innerHTML = html;
+    if (!text) return '';
+    
+    let html = escapeHtml(text);
+    
+    // 1. コードブロックの変換 (```lang ... ```)
+    html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
+        return `<pre><code class="language-${lang}">${code.trim()}</code></pre>`;
+    });
+    
+    // 2. インラインコードの変換 (`code`)
+    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+    
+    // 3. 太字の変換 (**text**)
+    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    
+    // 4. 箇条書き（* または - ）の変換
+    // 行頭の「* 」や「- 」を <li> タグに変換し、連続する <li> を <ul> で囲みます
+    html = html.split('\n').map(line => {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('* ') || trimmed.startsWith('- ')) {
+            return `<li>${trimmed.substring(2)}</li>`;
+        }
+        return line;
+    }).join('\n');
+    
+    // <li> の塊を <ul> で包む簡単な処理
+    html = html.replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>');
+    
+    // 5. 改行を <br> に変換（ただし、すでにタグで囲まれている部分は除く）
+    html = html.replace(/\n/g, '<br>');
+    html = html.replace(/<\/pre><br>/g, '</pre>');
+    html = html.replace(/<\/ul><br>/g, '</ul>');
+    html = html.replace(/<br><li>/g, '<li>');
+    html = html.replace(/<\/li><br>/g, '</li>');
+    
+    return html;
 }
 
 // ============ SAVE SYNTAX ============
 function openSaveModal() {
-    saveTitle.value = '';
-    saveCode.value = currentResponse.replace(/<[^>]*>/g, '');
+    // タイトルの初期値（質問文の先頭15文字など）
+    saveTitle.value = queryInput.value ? `${queryInput.value.substring(0, 15)}...` : '新しい構文';
+    
+    // 💡 AIの返答（HTMLに変換された後）から、<code>...</code> の中身だけを抽出する
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = responseContent.innerHTML;
+    const codeElement = tempDiv.querySelector('pre code');
+    
+    if (codeElement) {
+        // コードブロックが見つかったら、その中身（テキスト）だけをセット
+        // 以前エスケープされた文字（&lt; など）を元に戻すために textContent を使います
+        saveCode.value = codeElement.textContent;
+    } else {
+        // 万が一コードブロックがなかった場合は、タグを除去した全テキストをフォールバックとしてセット
+        saveCode.value = currentResponse.replace(/<[^>]*>/g, '');
+    }
+    
     saveExplanation.value = '';
-    saveTags.value = '';
+    saveTags.value = languageSelect.value; // 初期タグに言語を設定
+    
     saveModal.classList.remove('hidden');
 }
 
