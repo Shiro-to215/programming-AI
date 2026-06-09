@@ -124,34 +124,57 @@ async function askSyntax() {
         }
 
         const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
-
+        // 💡 修正点1: 明示的に 'utf-8' を指定してiPadでの文字化け・データ消失を防ぎます
+        const decoder = new TextDecoder('utf-8');
+        
+        // 「考え中」をここで消します
         loadingDiv.classList.add('hidden');
 
         while (true) {
             const { done, value } = await reader.read();
-            if (done) break;
-
-            buffer += decoder.decode(value, { stream: true });
             
-            // 💡 iPad(Safari)用に届いた「data: 〇〇」という特殊な形式から、AIの文字だけを抜き出す処理
-            const lines = buffer.split('\n');
-            let tempResponse = '';
+            // 💡 修正点2: Safariが文字をせき止めるのを防ぐため、
+            // データが届くたびに、または通信が終わった瞬間に、バッファを強制的に吐き出させます
+            if (done) {
+                const finalChunk = decoder.decode(); // 残りの文字を強制フラッシュ
+                if (finalChunk) {
+                    processIncomingData(finalChunk);
+                }
+                break;
+            }
+
+            const chunk = decoder.decode(value, { stream: true });
+            processIncomingData(chunk);
+        }
+
+        // 💡 届いたデータを安全に処理して画面に映すための、Safari用の補助関数
+        function processIncomingData(textData) {
+            // 前回の残りデータと結合して1行ずつ分解
+            const lines = textData.split('\n');
             
             for (const line of lines) {
+                // 前回設定した 「data: 」形式の目印をチェック
                 if (line.startsWith('data: ')) {
-                    tempResponse += line.slice(6);
+                    currentResponse += line.slice(6);
+                } else if (line.trim() !== '' && !line.startsWith('data:')) {
+                    // 万が一「data:」がSafariのバグで削れて届いた場合の保険
+                    currentResponse += line;
                 }
             }
             
-            if (tempResponse) {
-                currentResponse = tempResponse;
+            // 💡 1文字でもデータがあれば、Safariの画面を強制的に書き換えます
+            if (currentResponse) {
                 responseContent.innerHTML = renderMarkdown(currentResponse);
             }
         }
 
-        saveBtn.classList.remove('hidden');
+        // 全て終わったら保存ボタンを出す
+        if (currentResponse) {
+            saveBtn.classList.remove('hidden');
+        } else {
+            // もしここまで来ても文字が空っぽだった場合の、本当の最終警告
+            responseContent.innerHTML = `<p style="color: red;">⚠️ サーバーからデータは届きましたが、文字が空っぽです。GeminiのAPIキー（GEMINI_API_KEY）が正しいか確認してください。</p>`;
+        }
 
     } catch (error) {
         console.error('Error:', error);
