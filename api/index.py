@@ -31,12 +31,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize database on startup safely
-try:
-    init_db()
-except Exception as e:
-    print(f"SQLite DB initialization ignored or failed (e.g. read-only filesystem): {e}")
-
 # Initialize Gemini client
 api_key = os.getenv("GEMINI_API_KEY")
 if not api_key:
@@ -66,20 +60,29 @@ class SyntaxUpdate(BaseModel):
     tags: Optional[List[str]] = None
 
 
+# 一番上で追加のインポートを確認（無ければ get_python_syntax もインポートしてください）
+from gemini_client import create_client, get_python_syntax
+
 @app.post("/api/ask")
 async def ask_syntax(query: SyntaxQuery):
-    """Ask Gemini about syntax and get a streamed response"""
+    """Ask Gemini about syntax and get response (Safe version)"""
     try:
-        generator = get_python_syntax_stream(gemini_client, query.query, query.language)
-        return StreamingResponse(generator, media_type="text/event-stream")
+        # ストリーミングを使わず、一括でAIの返答を取得する
+        # get_python_syntax は同期関数なので通常通り呼び出します
+        result_text = get_python_syntax(gemini_client, query.query, query.language)
+        
+        async def generate():
+            if result_text:
+                yield f"data: {result_text}\n\n"
+
+        return StreamingResponse(generate(), media_type="text/event-stream")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/api/syntax")
-@app.post("/api/save-syntax")
-def create_syntax_endpoint(syntax: SyntaxCreate):
-    """Save a syntax to database (Supports both routing paths defensively)"""
+def create_syntax(syntax: SyntaxCreate):
+    """Save a syntax to database"""
     try:
         result = save_syntax(
             title=syntax.title,
@@ -94,11 +97,11 @@ def create_syntax_endpoint(syntax: SyntaxCreate):
 
 
 @app.get("/api/syntaxes")
-@app.get("/api/get-syntaxes")
-def get_syntaxes_endpoint():
+def get_syntaxes(language: Optional[str] = None):
     """Get all saved syntaxes"""
     try:
-        return get_all_syntaxes()
+        results = get_all_syntaxes(language)
+        return {"results": results}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
