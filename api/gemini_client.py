@@ -48,25 +48,17 @@ async def get_python_syntax_stream(client, query: str, language: str = "python")
 
 ### 💻 実装コード
 実践ですぐに使える、短くシンプルなコード例を記述してください。
-必ずコードブロック（```python ... ``` や ```cpp ... ``` のような形式）を使用し、初心者でも迷わないよう各行に簡単なコメントを入れてください。
+必ずコードブロック（```python ... ``` のような形式）を使用し、初心者でも迷わないよう各行に簡単なコメントを入れてください。
 
 ### ⚠️ 注意点
 初心者がよくやるミスや、競プロでバグらせやすいポイントを1つだけ教えてください。"""
 
     prompt = f"{system_prompt}\n\nUser Question: {query}"
     
-    try:
-        # ✅ 修正：非同期(aio)のストリーミング関数を使用します
-        response_stream = await client.aio.models.generate_content_stream(
-            model="gemini-2.5-flash",
-            contents=prompt
-        )
-        
-        # ✅ 修正：文字が届くたびに「data: 文字列\n\n」の形式で即座にフロント（iPad）へ流します
-        async for chunk in response_stream:
-            if chunk.text:
-                yield f"data: {chunk.text}\n\n"
-                
-    except Exception as e:
-        # エラーが起きた場合はフロントにエラーメッセージを流す
-        yield f"data: ❌ Gemini APIエラーが発生しました: {str(e)}\n\n"
+    response = await client.aio.models.generate_content_stream(
+        model="gemini-2.5-flash",
+        contents=prompt
+    )
+    
+    for chunk in response:
+        yield chunk.text
