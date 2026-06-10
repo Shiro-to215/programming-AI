@@ -60,17 +60,21 @@ class SyntaxUpdate(BaseModel):
     tags: Optional[List[str]] = None
 
 
+# 一番上で追加のインポートを確認（無ければ get_python_syntax もインポートしてください）
+from gemini_client import create_client, get_python_syntax
+
 @app.post("/api/ask")
 async def ask_syntax(query: SyntaxQuery):
-    """Ask Gemini about syntax and get a streamed response"""
+    """Ask Gemini about syntax and get response (Safe version)"""
     try:
+        # ストリーミングを使わず、一括でAIの返答を取得する
+        # get_python_syntax は同期関数なので通常通り呼び出します
+        result_text = get_python_syntax(gemini_client, query.query, query.language)
+        
         async def generate():
-            async for chunk in get_python_syntax_stream(gemini_client, query.query, query.language):
-                if chunk:
-                    # 💡 iPad(Safari)でもデータが細切れだと認識できるように、頭に「data: 」をつけ、末尾に改行を2つ入れます
-                    yield f"data: {chunk}\n\n"
+            if result_text:
+                yield f"data: {result_text}\n\n"
 
-        # 💡 media_type を Safariが対応している "text/event-stream" に変更します
         return StreamingResponse(generate(), media_type="text/event-stream")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
