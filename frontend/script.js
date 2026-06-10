@@ -1,11 +1,5 @@
-/**
- * Main frontend application logic
- */
-
-// API Base URL
 const API_BASE = '/api';
 
-// DOM Elements
 const tabs = document.querySelectorAll('.tab-btn');
 const tabContents = document.querySelectorAll('.tab-content');
 const queryInput = document.getElementById('query');
@@ -19,7 +13,6 @@ const searchBox = document.getElementById('search-box');
 const refreshBtn = document.getElementById('refresh-btn');
 const syntaxesList = document.getElementById('syntaxes-list');
 
-// Modal Elements
 const saveModal = document.getElementById('save-modal');
 const viewModal = document.getElementById('view-modal');
 const saveTitle = document.getElementById('save-title');
@@ -28,362 +21,183 @@ const saveExplanation = document.getElementById('save-explanation');
 const saveTags = document.getElementById('save-tags');
 const confirmSaveBtn = document.getElementById('confirm-save');
 const cancelSaveBtn = document.getElementById('cancel-save');
-const closeViewBtn = document.getElementById('close-view');
+const closeViewBtn = document.querySelector('#view-modal .close-btn');
+const closeViewFooterBtn = document.getElementById('close-view');
 const deleteSyntaxBtn = document.getElementById('delete-syntax');
 
-// State
 let currentResponse = '';
 let currentSyntaxId = null;
 
-// Initialize
-document.addEventListener('DOMContentLoaded', () => {
-    setupTabNavigation();
-    setupEventListeners();
-    loadSyntaxes();
+document.addEventListener('DOMContentLoaded', async () => {
+    initTabs();
+    initEventListeners();
+    await syntaxDB.ensureDb();
+    await loadSyntaxes();
 });
 
-// ============ TAB NAVIGATION ============
-function setupTabNavigation() {
+function initTabs() {
     tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            const tabName = tab.dataset.tab;
-            
+        tab.addEventListener('click', async () => {
             tabs.forEach(t => t.classList.remove('active'));
             tabContents.forEach(c => c.classList.remove('active'));
-            
+
             tab.classList.add('active');
-            document.getElementById(`${tabName}-tab`).classList.add('active');
+            const tabId = `${tab.dataset.tab}-tab`;
+            document.getElementById(tabId).classList.add('active');
+
+            if (tab.dataset.tab === 'library') {
+                await loadSyntaxes();
+            }
         });
     });
 }
 
-// ============ EVENT LISTENERS ============
-function setupEventListeners() {
-    // Ask AI
-    askBtn.addEventListener('click', askSyntax);
-    queryInput.addEventListener('keydown', (e) => {
-        if (e.ctrlKey && e.key === 'Enter') askSyntax();
-    });
-
-    // Save Syntax
+function initEventListeners() {
+    askBtn.addEventListener('click', askAI);
     saveBtn.addEventListener('click', openSaveModal);
-    confirmSaveBtn.addEventListener('click', saveSyntax);
-    cancelSaveBtn.addEventListener('click', closeSaveModal);
-    document.querySelectorAll('.close-btn').forEach(btn => {
-        btn.addEventListener('click', closeModals);
-    });
-
-    // Library
-    refreshBtn.addEventListener('click', loadSyntaxes);
-    searchBox.addEventListener('input', (e) => {
-        const query = e.target.value;
-        if (query) {
-            searchSyntaxes(query);
-        } else {
-            loadSyntaxes();
-        }
-    });
-
-    // Delete Syntax
+    confirmSaveBtn.addEventListener('click', saveCurrentSyntax);
+    cancelSaveBtn.addEventListener('click', closeModals);
+    if (closeViewBtn) closeViewBtn.addEventListener('click', closeModals);
+    if (closeViewFooterBtn) closeViewFooterBtn.addEventListener('click', closeModals);
     deleteSyntaxBtn.addEventListener('click', deleteSyntax);
-    closeViewBtn.addEventListener('click', closeModals);
+    searchBox.addEventListener('input', () => loadSyntaxes());
 }
 
-// ============ ASK AI FUNCTIONALITY ============
-async function askSyntax() {
+async function askAI() {
     const query = queryInput.value.trim();
-    const language = languageSelect.value;
+    if (!query) return;
 
-    if (!query) {
-        alert('質問を入力してください');
-        return;
-    }
-
-    // UI初期化
-    responseArea.classList.remove('hidden');
+    askBtn.disabled = true;
     loadingDiv.classList.remove('hidden');
+    responseArea.classList.add('hidden');
     responseContent.innerHTML = '';
     currentResponse = '';
-    saveBtn.classList.add('hidden');
-    askBtn.disabled = true;
 
     try {
         const response = await fetch(`${API_BASE}/ask`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                query: query,
-                language: language
-            })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: query, language: languageSelect.value })
         });
 
-        if (!response.ok) {
-            throw new Error(`サーバーエラー (ステータスコード: ${response.status})`);
-        }
+        if (!response.ok) throw new Error(`サーバーエラー (${response.status})`);
 
         const reader = response.body.getReader();
-        // 💡 修正点1: 明示的に 'utf-8' を指定してiPadでの文字化け・データ消失を防ぎます
         const decoder = new TextDecoder('utf-8');
-        
-        // 「考え中」をここで消します
+        responseArea.classList.remove('hidden');
         loadingDiv.classList.add('hidden');
 
         while (true) {
-            const { done, value } = await reader.read();
-            
-            // 💡 修正点2: Safariが文字をせき止めるのを防ぐため、
-            // データが届くたびに、または通信が終わった瞬間に、バッファを強制的に吐き出させます
+            const { value, done } = await reader.read();
             if (done) {
-                const finalChunk = decoder.decode(); // 残りの文字を強制フラッシュ
-                if (finalChunk) {
-                    processIncomingData(finalChunk);
-                }
+                const finalChunk = decoder.decode();
+                if (finalChunk) processStreamChunk(finalChunk);
                 break;
             }
 
             const chunk = decoder.decode(value, { stream: true });
-            processIncomingData(chunk);
+            processStreamChunk(chunk);
         }
-
-        // 💡 届いたデータを安全に処理して画面に映すための、Safari用の補助関数
-        function processIncomingData(textData) {
-            // 前回の残りデータと結合して1行ずつ分解
-            const lines = textData.split('\n');
-            
-            for (const line of lines) {
-                // 前回設定した 「data: 」形式の目印をチェック
-                if (line.startsWith('data: ')) {
-                    currentResponse += line.slice(6);
-                } else if (line.trim() !== '' && !line.startsWith('data:')) {
-                    // 万が一「data:」がSafariのバグで削れて届いた場合の保険
-                    currentResponse += line;
-                }
-            }
-            
-            // 💡 1文字でもデータがあれば、Safariの画面を強制的に書き換えます
-            if (currentResponse) {
-                responseContent.innerHTML = renderMarkdown(currentResponse);
-            }
-        }
-
-        // 全て終わったら保存ボタンを出す
-        if (currentResponse) {
-            saveBtn.classList.remove('hidden');
-        } else {
-            // もしここまで来ても文字が空っぽだった場合の、本当の最終警告
-            responseContent.innerHTML = `<p style="color: red;">⚠️ サーバーからデータは届きましたが、文字が空っぽです。GeminiのAPIキー（GEMINI_API_KEY）が正しいか確認してください。</p>`;
-        }
-
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Fetch error:', error);
         loadingDiv.classList.add('hidden');
-        alert(`❌ エラーが発生しました\n原因: ${error.message}`);
-        responseContent.innerHTML = `<p style="color: red; font-weight: bold; padding: 10px; background: #fff3f3; border-radius: 5px;">【通信エラー】${error.message}</p>`;
+        responseArea.classList.remove('hidden');
+        responseContent.innerHTML = `<p class="error-msg">【通信エラー】${error.message}</p>`;
     } finally {
         askBtn.disabled = false;
     }
 }
 
-
-function renderMarkdown(text) {
-    if (!text) return '';
-    try {
-        return marked.parse(text);
-    } catch (e) {
-        return text.replace(/\n/g, '<br>');
+function processStreamChunk(chunk) {
+    const lines = chunk.split('\n');
+    for (const line of lines) {
+        if (line.startsWith('data: ')) {
+            currentResponse += line.slice(6);
+        } else if (line.trim() !== '' && !line.startsWith('data:')) {
+            currentResponse += line;
+        }
+    }
+    if (currentResponse) {
+        responseContent.innerHTML = renderMarkdown(currentResponse);
+        saveBtn.classList.remove('hidden');
     }
 }
 
-// ============ SAVE SYNTAX ============
 function openSaveModal() {
-    // タイトルの初期値（質問文の先頭15文字など）
-    saveTitle.value = queryInput.value ? `${queryInput.value.substring(0, 15)}...` : '新しい構文';
+    if (!currentResponse) return;
     
-    // 💡 AIの返答（HTMLに変換された後）から、<code>...</code> の中身だけを抽出する
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = responseContent.innerHTML;
-    const codeElement = tempDiv.querySelector('pre code');
+    // ``` で囲まれた純粋なコード部分だけをすべて抽出
+    const codeBlockRegex = /
+http://googleusercontent.com/immersive_entry_chip/0
+
+---
+
+### 4. `api/gemini_client.py`（AIの口調修正）
+
+余計なノイズや馴れ馴れしい話し方を徹底的に排除し、競プロ用の解説として最も無駄のない丁寧なトーンに変更しています。
+
+```python
+"""Gemini API client for competitive programming syntax assistance"""
+from google import genai
+
+def create_client(api_key: str):
+    """Create and return Gemini client"""
+    return genai.Client(api_key=api_key)
+
+
+def get_python_syntax(client, query: str, language: str = "python") -> str:
+    """Get Python syntax explanation from Gemini"""
+    system_prompt = f"""あなたはプログラミング初心者向けの競プロ専門の解説者です。
+丁寧で分かりやすい日本語のマークダウン形式で回答してください。
+{language} の構文について、以下の構成に厳密に従ってください。
+
+### 💡 概要と解説
+初心者でも直感的に理解できる簡単な説明や、具体的な例えを用いて解説してください。
+
+### 🛒 活用シーン
+競プロのどのような問題で使うのか、具体的なイメージができる例を挙げてください。
+
+### 💻 実装コード
+実践ですぐに使える、短くシンプルなコード例を記述してください。
+必ずコードブロック（```python ... ``` や ```cpp ... ``` のような形式）を使用し、初心者でも迷わないよう各行に簡単なコメントを入れてください。
+
+### ⚠️ 注意点
+初心者がよくやるミスや、競プロでバグらせやすいポイントを1つだけ教えてください。"""
+
+    prompt = f"{system_prompt}\n\nUser Question: {query}"
     
-    if (codeElement) {
-        // コードブロックが見つかったら、その中身（テキスト）だけをセット
-        // 以前エスケープされた文字（&lt; など）を元に戻すために textContent を使います
-        saveCode.value = codeElement.textContent;
-    } else {
-        // 万が一コードブロックがなかった場合は、タグを除去した全テキストをフォールバックとしてセット
-        saveCode.value = currentResponse.replace(/<[^>]*>/g, '');
-    }
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=prompt
+    )
+    return response.text
+
+
+async def get_python_syntax_stream(client, query: str, language: str = "python"):
+    """Get Python syntax explanation from Gemini with streaming (Async version)"""
+    system_prompt = f"""あなたはプログラミング初心者向けの競プロ専門の解説者です。
+丁寧で分かりやすい日本語のマークダウン形式で回答してください。
+{language} の構文について、以下の構成に厳密に従ってください。
+
+### 💡 概要と解説
+初心者でも直感的に理解できる簡単な説明や、具体的な例えを用いて解説してください。
+
+### 🛒 活用シーン
+競プロのどのような問題で使うのか、具体的なイメージができる例を挙げてください。
+
+### 💻 実装コード
+実践ですぐに使える、短くシンプルなコード例を記述してください。
+必ずコードブロック（```python ... ``` や ```cpp ... ``` のような形式）を使用し、初心者でも迷わないよう各行に簡単なコメントを入れてください。
+
+### ⚠️ 注意点
+初心者がよくやるミスや、競プロでバグらせやすいポイントを1つだけ教えてください。"""
+
+    prompt = f"{system_prompt}\n\nUser Question: {query}"
     
-    saveExplanation.value = '';
-    saveTags.value = languageSelect.value; // 初期タグに言語を設定
+    response = await client.aio.models.generate_content_stream(
+        model="gemini-2.5-flash",
+        contents=prompt
+    )
     
-    saveModal.classList.remove('hidden');
-}
-
-function closeSaveModal() {
-    saveModal.classList.add('hidden');
-}
-
-async function saveSyntax() {
-    const title = saveTitle.value.trim();
-    const code = saveCode.value.trim();
-    const explanation = saveExplanation.value.trim();
-    const tags = saveTags.value.split(',').map(t => t.trim()).filter(t => t);
-    const language = languageSelect.value;
-
-    if (!title || !code) {
-        alert('タイトルとコードは必須です');
-        return;
-    }
-
-    try {
-        // 1. まずブラウザ側（IndexedDB）に確実に保存する
-        await syntaxDB.add({
-            title,
-            language,
-            code,
-            explanation,
-            tags
-        });
-
-        // 2. サーバー（Vercel）への保存を試みる
-        // Vercel上ではSQLiteファイルへの書き込み制限で失敗する可能性が高いですが、
-        // 失敗してもキャッチ（catch）して、エラー画面を出さずにそのまま進めます
-        try {
-            await fetch(`${API_BASE}/syntax`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    title,
-                    language,
-                    code,
-                    explanation,
-                    tags
-                })
-            });
-        } catch (err) {
-            console.warn('サーバーへの同期はスキップされました（ローカルには安全に保存されています）:', err);
-        }
-
-        // 3. 画面を閉じて、ライブラリタブに切り替える
-        closeSaveModal();
-        alert('構文を保存しました！');
-        
-        const libraryTab = document.querySelector('[data-tab="library"]');
-        if (libraryTab) libraryTab.click();
-        await loadSyntaxes();
-        
-    } catch (error) {
-        console.error('Save error:', error);
-        alert('ローカルへの保存自体に失敗しました');
-    }
-}
-
-// ============ SYNTAX LIBRARY ============
-async function loadSyntaxes() {
-    try {
-        const syntaxes = await syntaxDB.getAll();
-        renderSyntaxesList(syntaxes);
-    } catch (error) {
-        console.error('Load error:', error);
-        syntaxesList.innerHTML = '<p class="empty-message">エラーが発生しました</p>';
-    }
-}
-
-async function searchSyntaxes(query) {
-    try {
-        const results = await syntaxDB.search(query);
-        renderSyntaxesList(results);
-    } catch (error) {
-        console.error('Search error:', error);
-        syntaxesList.innerHTML = '<p class="empty-message">検索に失敗しました</p>';
-    }
-}
-
-function renderSyntaxesList(syntaxes) {
-    if (syntaxes.length === 0) {
-        syntaxesList.innerHTML = '<p class="empty-message">構文がありません</p>';
-        return;
-    }
-
-    syntaxesList.innerHTML = syntaxes.map(syntax => `
-        <div class="syntax-card" onclick="viewSyntax(${syntax.id})">
-            <div class="syntax-card-title">${escapeHtml(syntax.title)}</div>
-            <div class="syntax-card-meta">
-                <span>📝 ${syntax.language}</span>
-                <span>📅 ${new Date(syntax.created_at).toLocaleDateString('ja-JP')}</span>
-            </div>
-            <div class="syntax-card-code">${escapeHtml(syntax.code)}</div>
-            ${syntax.tags.length > 0 ? `
-                <div class="syntax-card-tags">
-                    ${syntax.tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}
-                </div>
-            ` : ''}
-        </div>
-    `).join('');
-}
-
-// ============ VIEW/DELETE SYNTAX ============
-async function viewSyntax(id) {
-    try {
-        const syntax = await syntaxDB.getById(id);
-        if (!syntax) {
-            alert('構文が見つかりません');
-            return;
-        }
-
-        currentSyntaxId = id;
-
-        document.getElementById('view-title').textContent = syntax.title;
-        document.getElementById('view-language').textContent = syntax.language;
-        document.getElementById('view-date').textContent = new Date(syntax.created_at).toLocaleDateString('ja-JP');
-        document.getElementById('view-code').textContent = syntax.code;
-        document.getElementById('view-explanation').textContent = syntax.explanation || '（説明なし）';
-
-        const tagsDiv = document.getElementById('view-tags');
-        tagsDiv.innerHTML = syntax.tags.length > 0
-            ? syntax.tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('')
-            : '';
-
-        viewModal.classList.remove('hidden');
-    } catch (error) {
-        console.error('View error:', error);
-        alert('エラーが発生しました');
-    }
-}
-
-async function deleteSyntax() {
-    if (!currentSyntaxId) return;
-
-    if (confirm('この構文を削除してもよろしいですか？')) {
-        try {
-            await syntaxDB.delete(currentSyntaxId);
-            closeModals();
-            await loadSyntaxes();
-            alert('構文を削除しました');
-        } catch (error) {
-            console.error('Delete error:', error);
-            alert('削除に失敗しました');
-        }
-    }
-}
-
-// ============ UTILITIES ============
-function closeModals() {
-    saveModal.classList.add('hidden');
-    viewModal.classList.add('hidden');
-}
-
-function escapeHtml(text) {
-    const map = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-    };
-    return text.replace(/[&<>"']/g, m => map[m]);
-}
+    for chunk in response:
+        yield chunk.text
