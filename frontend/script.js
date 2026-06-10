@@ -179,10 +179,15 @@ async function askSyntax() {
     } catch (error) {
         console.error('Error:', error);
         loadingDiv.classList.add('hidden');
-        alert(`❌ エラーが発生しました\n原因: ${error.message}`);
-        responseContent.innerHTML = `<p style="color: red; font-weight: bold; padding: 10px; background: #fff3f3; border-radius: 5px;">【通信エラー】${error.message}</p>`;
-    } finally {
-        askBtn.disabled = false;
+        
+        // 💡 429 エラーの時の特別なメッセージ
+        if (error.message.includes('429')) {
+            alert("⚠️ API制限に達しました。\n無料枠の上限（1日20回）を超えたようです。明日まで待つか、APIキーの設定を見直してください。");
+        } else {
+            alert(`❌ エラーが発生しました\n原因: ${error.message}`);
+        }
+        
+        responseContent.innerHTML = `<p style="color: red; font-weight: bold;">通信エラーが発生しました。</p>`;
     }
 }
 
