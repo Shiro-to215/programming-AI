@@ -189,13 +189,9 @@ async function askSyntax() {
 
 function renderMarkdown(text) {
     if (!text) return '';
-    
-    // 💡 修正点：自作の怪しい置換処理をすべて捨て、世界標準の marked ライブラリに丸投げします
-    // これにより、箇条書き、太字、そして競プロで一番大事な「コードブロック（改行）」が完璧に再現されます
     try {
         return marked.parse(text);
     } catch (e) {
-        // 万が一ライブラリが読み込めなかった場合のセーフティ
         return text.replace(/\n/g, '<br>');
     }
 }
