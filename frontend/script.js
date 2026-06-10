@@ -42,7 +42,36 @@ let currentResponse = '';
 let currentSyntaxId = null;
 
 // Initialize
+/**
+ * Main frontend application logic
+ */
+
+// 💡 ここから修正：DOMが読み込まれた後に実行するようにする
 document.addEventListener('DOMContentLoaded', () => {
+
+    // API Base URL (既存のもの)
+    const API_BASE = '/api';
+
+    // DOM Elements (各要素を取得)
+    const askBtn = document.getElementById('ask-btn');
+    const saveBtn = document.getElementById('save-btn');
+    // ...他の必要なDOM要素もここに追加
+
+    // 💡 ボタンクリックのイベントを登録
+    if (askBtn) {
+        askBtn.addEventListener('click', async () => {
+            console.log("ボタンが押されました！");
+            await handleAsk(); // 既存の関数を呼び出す
+        });
+    }
+
+    // 💡 タブ切り替えのイベント
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            // タブ切り替えロジック
+        });
+    });
+
     setupTabNavigation();
     setupEventListeners();
     loadSyntaxes();
