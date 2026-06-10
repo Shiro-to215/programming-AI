@@ -526,3 +526,45 @@ body {
         width: 95%;
     }
 }
+
+
+/* ============ AI回答用のコードブロック修正（追記） ============ */
+#response-content pre {
+    background-color: #1e293b !important; /* 背景をダークグレーにして見やすく */
+    color: #38bdf8 !important;            /* 文字色を読みやすい薄い青（水色）に */
+    padding: 1rem !important;
+    border-radius: 0.5rem !important;
+    overflow-x: auto !important;          /* 横に長くなってもスクロールできるように */
+    margin: 1rem 0 !important;
+    border-left: 4px solid #3b82f6 !important;
+    white-space: pre !important;          /* 💡 超重要：コードの改行とスペースを完全に維持する */
+    font-family: 'Courier New', Courier, monospace !important; /* 等幅フォントにする */
+}
+
+#response-content code {
+    font-family: 'Courier New', Courier, monospace !important;
+    background-color: rgba(59, 130, 246, 0.1);
+    color: #f43f5e;                       /* 文中の短いコードはピンク色に */
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+    font-size: 0.9em;
+}
+
+/* コードブロックの中のコードはピンクにしない */
+#response-content pre code {
+    background-color: transparent !important;
+    color: inherit !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    white-space: pre !important;
+}
+
+/* 箇条書きの間隔を少し広げて見やすく */
+#response-content ul {
+    margin-left: 1.5rem !important;
+    margin-bottom: 1rem !important;
+}
+
+#response-content li {
+    margin-bottom: 0.5rem !important;
+}
