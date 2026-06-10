@@ -186,44 +186,18 @@ async function askSyntax() {
     }
 }
 
-// ============ MARKDOWN RENDERING ============
+
 function renderMarkdown(text) {
     if (!text) return '';
     
-    let html = escapeHtml(text);
-    
-    // 1. コードブロックの変換 (```lang ... ```)
-    html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
-        return `<pre><code class="language-${lang}">${code.trim()}</code></pre>`;
-    });
-    
-    // 2. インラインコードの変換 (`code`)
-    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
-    
-    // 3. 太字の変換 (**text**)
-    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-    
-    // 4. 箇条書き（* または - ）の変換
-    // 行頭の「* 」や「- 」を <li> タグに変換し、連続する <li> を <ul> で囲みます
-    html = html.split('\n').map(line => {
-        const trimmed = line.trim();
-        if (trimmed.startsWith('* ') || trimmed.startsWith('- ')) {
-            return `<li>${trimmed.substring(2)}</li>`;
-        }
-        return line;
-    }).join('\n');
-    
-    // <li> の塊を <ul> で包む簡単な処理
-    html = html.replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>');
-    
-    // 5. 改行を <br> に変換（ただし、すでにタグで囲まれている部分は除く）
-    html = html.replace(/\n/g, '<br>');
-    html = html.replace(/<\/pre><br>/g, '</pre>');
-    html = html.replace(/<\/ul><br>/g, '</ul>');
-    html = html.replace(/<br><li>/g, '<li>');
-    html = html.replace(/<\/li><br>/g, '</li>');
-    
-    return html;
+    // 💡 修正点：自作の怪しい置換処理をすべて捨て、世界標準の marked ライブラリに丸投げします
+    // これにより、箇条書き、太字、そして競プロで一番大事な「コードブロック（改行）」が完璧に再現されます
+    try {
+        return marked.parse(text);
+    } catch (e) {
+        // 万が一ライブラリが読み込めなかった場合のセーフティ
+        return text.replace(/\n/g, '<br>');
+    }
 }
 
 // ============ SAVE SYNTAX ============
