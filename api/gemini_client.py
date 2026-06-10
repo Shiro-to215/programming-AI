@@ -48,17 +48,20 @@ async def get_python_syntax_stream(client, query: str, language: str = "python")
 
 ### 💻 実装コード
 実践ですぐに使える、短くシンプルなコード例を記述してください。
-必ずコードブロック（```python ... ``` のような形式）を使用し、初心者でも迷わないよう各行に簡単なコメントを入れてください。
+必ずコードブロック（```python ... ``` や ```cpp ... ``` のような形式）を使用し、初心者でも迷わないよう各行に簡単なコメントを入れてください。
 
 ### ⚠️ 注意点
 初心者がよくやるミスや、競プロでバグらせやすいポイントを1つだけ教えてください。"""
 
     prompt = f"{system_prompt}\n\nUser Question: {query}"
     
+    # 💡 修正：google-genai SDK(v0.3.0+)の非同期ストリーミング(client.aio)を正しく使用
     response = await client.aio.models.generate_content_stream(
         model="gemini-2.5-flash",
         contents=prompt
     )
     
-    for chunk in response:
-        yield chunk.text
+    async for chunk in response:
+        if chunk.text:
+            # フロントエンドのSSE受信規格（data: ）に適合させて流し込みます
+            yield f"data: {chunk.text}\n"
