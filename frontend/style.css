@@ -1,4 +1,6 @@
-/* Global Styles */
+/* ============ 🚀 新・チャットAI風デザイン完全版 ============ */
+
+/* グローバル設定 */
 * {
     margin: 0;
     padding: 0;
@@ -18,85 +20,72 @@
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     background-color: var(--bg);
     color: var(--text);
     line-height: 1.6;
+    padding-bottom: 2rem;
 }
 
-/* Container */
+/* コンテナ */
 .container {
-    max-width: 900px;
+    max-width: 800px;
     margin: 0 auto;
     padding: 0 1rem;
 }
 
-/* Header */
+/* ヘッダー */
 .header {
     text-align: center;
-    padding: 2rem 0;
+    padding: 1.5rem 0;
     border-bottom: 1px solid var(--border);
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
 }
 
 .header h1 {
-    font-size: 2rem;
-    margin-bottom: 0.5rem;
+    font-size: 1.8rem;
+    margin-bottom: 0.25rem;
     background: linear-gradient(135deg, var(--primary), var(--secondary));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    background-clip: text;
 }
 
 .header p {
     color: var(--text-muted);
+    font-size: 0.9rem;
 }
 
-/* Main Content */
-.main-content {
-    animation: fadeIn 0.3s ease-in;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* Tabs */
+/* タブ切り替えボタン */
 .tabs {
     display: flex;
-    gap: 1rem;
-    margin-bottom: 2rem;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
     border-bottom: 1px solid var(--border);
+    padding-bottom: 0.5rem;
 }
 
 .tab-btn {
-    padding: 1rem 1.5rem;
     background: none;
     border: none;
     color: var(--text-muted);
-    cursor: pointer;
+    padding: 0.5rem 1rem;
     font-size: 1rem;
-    border-bottom: 3px solid transparent;
-    transition: all 0.3s ease;
-}
-
-.tab-btn.active {
-    color: var(--primary);
-    border-bottom-color: var(--primary);
+    cursor: pointer;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
 }
 
 .tab-btn:hover {
     color: var(--text);
+    background-color: rgba(255, 255, 255, 0.05);
 }
 
-/* Tab Content */
+.tab-btn.active {
+    color: #fff;
+    background-color: var(--primary);
+    font-weight: bold;
+}
+
 .tab-content {
     display: none;
 }
@@ -105,15 +94,60 @@ body {
     display: block;
 }
 
-/* Buttons */
+/* 入力エリア */
+.ask-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.language-selector {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.language-selector select {
+    padding: 0.5rem;
+    background-color: var(--bg-light);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 0.25rem;
+}
+
+.input-area {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+textarea {
+    width: 100%;
+    padding: 1rem;
+    background-color: var(--bg-light);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    font-family: inherit;
+    font-size: 1rem;
+    resize: vertical;
+}
+
+textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+/* ボタン基本 */
 .btn {
     padding: 0.75rem 1.5rem;
-    border: none;
     border-radius: 0.5rem;
     font-size: 1rem;
+    font-weight: bold;
     cursor: pointer;
-    transition: all 0.3s ease;
-    font-weight: 600;
+    border: none;
+    transition: background 0.2s;
 }
 
 .btn-primary {
@@ -123,98 +157,20 @@ body {
 
 .btn-primary:hover {
     background-color: var(--primary-dark);
-    transform: translateY(-2px);
 }
 
-.btn-secondary {
-    background-color: var(--bg-light);
-    color: var(--text);
-    border: 1px solid var(--border);
-}
-
-.btn-secondary:hover {
+.btn-primary:disabled {
     background-color: var(--border);
+    cursor: not-allowed;
 }
 
-.btn-danger {
-    background-color: var(--danger);
-    color: white;
-}
-
-.btn-danger:hover {
-    background-color: #dc2626;
-}
-
-/* Ask Section */
-.ask-section {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-}
-
-.language-selector {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-}
-
-.language-selector label {
-    font-weight: 600;
-}
-
-.language-selector select {
-    padding: 0.5rem 1rem;
-    background-color: var(--bg-light);
-    color: var(--text);
+/* 💬 AI回答エリア（チャットUI大改造） */
+#response-area {
+    margin-top: 1.5rem;
+    background-color: #111827; /* 暗めの背景でチャット感 */
     border: 1px solid var(--border);
-    border-radius: 0.5rem;
-    cursor: pointer;
-}
-
-.input-area {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-#query {
-    padding: 1rem;
-    background-color: var(--bg-light);
-    color: var(--text);
-    border: 1px solid var(--border);
-    border-radius: 0.5rem;
-    resize: none;
-    font-family: inherit;
-}
-
-#query:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-/* Response Area */
-.response-area {
-    background-color: var(--bg-light);
-    border: 1px solid var(--border);
-    border-radius: 0.5rem;
+    border-radius: 1rem;
     padding: 1.5rem;
-    animation: slideIn 0.3s ease;
-}
-
-@keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.response-area.hidden {
-    display: none;
 }
 
 .response-header {
@@ -222,428 +178,157 @@ body {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid #1f2937;
+    padding-bottom: 0.5rem;
 }
 
-.response-header h3 {
-    font-size: 1.1rem;
-}
-
-.response-content {
-    line-height: 1.8;
-    color: var(--text);
-}
-
-.response-content code {
-    background-color: rgba(0, 0, 0, 0.3);
-    padding: 0.2rem 0.4rem;
-    border-radius: 0.3rem;
-    font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
-    font-size: 0.9rem;
-}
-
-.response-content pre {
-    background-color: rgba(0, 0, 0, 0.5);
-    padding: 1rem;
-    border-radius: 0.5rem;
-    overflow-x: auto;
-    margin: 1rem 0;
-    border-left: 3px solid var(--primary);
-}
-
-.response-content pre code {
-    background: none;
-    padding: 0;
-    color: #d4af37;
-}
-
-/* Loading Spinner */
-.loading {
+/* ローディング（考え中） */
+#loading {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 1rem;
+    gap: 0.5rem;
+    color: #38bdf8;
+    font-weight: bold;
 }
 
-.loading.hidden {
-    display: none;
+.hidden {
+    display: none !important;
 }
 
-.spinner {
-    width: 40px;
-    height: 40px;
-    border: 4px solid rgba(59, 130, 246, 0.2);
-    border-top-color: var(--primary);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
+/* 📄 マークダウン変換後のテキスト装飾 */
+#response-content {
+    color: #e5e7eb;
+    line-height: 1.8;
+    font-size: 1rem;
 }
 
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
+/* 見出し（### の部分）を可愛く目立たせる */
+#response-content h3 {
+    font-size: 1.15rem;
+    color: #38bdf8; /* 水色 */
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.25rem;
+    border-bottom: 1px solid #374151;
 }
 
-/* Library Section */
-.library-section {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
+#response-content h3:first-child {
+    margin-top: 0;
+}
+
+/* 文章の段落 */
+#response-content p {
+    margin-bottom: 1rem;
+    white-space: normal; /* 👈 重なりバグを防ぐ超重要設定 */
+}
+
+/* 箇条書き */
+#response-content ul, #response-content ol {
+    margin-left: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+#response-content li {
+    margin-bottom: 0.5rem;
+}
+
+/* 💻 独立したコードブロック（```で囲まれた部分） */
+#response-content pre {
+    background-color: #05070f !important; /* 真っ黒 */
+    border: 1px solid #1f2937 !important;
+    border-left: 4px solid #3b82f6 !important; /* 左の青線 */
+    padding: 1rem !important;
+    border-radius: 0.5rem !important;
+    margin: 1rem 0 !important;
+    
+    /* 🚨 iPadの重なり・すり抜けを絶対に防ぐ3種の神器 */
+    white-space: pre !important;         /* 改行を維持 */
+    overflow-x: auto !important;         /* 横スクロールを可能に */
+    display: block !important;           /* 縦にしっかり広げる */
+    width: 100% !important;
+}
+
+/* コードブロックの中の文字スタリング */
+#response-content pre code {
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace !important;
+    font-size: 0.9rem !important;
+    color: #34d399 !important;           /* 読みやすい黄緑・水色系 */
+    background: none !important;
+    padding: 0 !important;
+    white-space: pre !important;
+    display: inline !important;
+    word-break: normal !important;
+    word-wrap: normal !important;
+}
+
+/* 文章中に出てくる短いコード（`a = 1` など） */
+#response-content :not(pre) > code {
+    background-color: #2d3748 !important;
+    color: #f43f5e !important;           /* ピンクで強調 */
+    padding: 0.2rem 0.4rem !important;
+    border-radius: 0.25rem !important;
+    font-size: 0.9em !important;
+    font-family: monospace !important;
+}
+
+/* ライブラリ（一覧画面など） */
+.search-bar {
+    margin-bottom: 1.5rem;
+}
+
+#search-box {
+    width: 100%;
 }
 
 .library-header {
     display: flex;
-    gap: 1rem;
-}
-
-.search-box {
-    flex: 1;
-    padding: 0.75rem 1rem;
-    background-color: var(--bg-light);
-    color: var(--text);
-    border: 1px solid var(--border);
-    border-radius: 0.5rem;
-    font-size: 1rem;
-}
-
-.search-box:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
 }
 
 .syntaxes-list {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 1rem;
 }
 
 .syntax-card {
     background-color: var(--bg-light);
     border: 1px solid var(--border);
-    border-radius: 0.5rem;
-    padding: 1.5rem;
+    border-radius: 0.75rem;
+    padding: 1rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: transform 0.2s;
 }
 
 .syntax-card:hover {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
     transform: translateY(-2px);
+    border-color: var(--primary);
 }
 
-.syntax-card-title {
-    font-size: 1.1rem;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    color: var(--primary);
-}
-
-.syntax-card-meta {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 1rem;
-    font-size: 0.9rem;
-    color: var(--text-muted);
-}
-
-.syntax-card-code {
-    background-color: rgba(0, 0, 0, 0.3);
-    padding: 1rem;
-    border-radius: 0.3rem;
-    overflow-x: auto;
-    font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
-    font-size: 0.85rem;
-    margin-bottom: 1rem;
-    max-height: 150px;
-    overflow-y: auto;
-}
-
-.syntax-card-tags {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-}
-
-.tag {
-    background-color: rgba(59, 130, 246, 0.2);
-    color: var(--primary);
-    padding: 0.25rem 0.75rem;
-    border-radius: 1rem;
-    font-size: 0.85rem;
-}
-
-.empty-message {
-    text-align: center;
-    color: var(--text-muted);
-    padding: 2rem;
-}
-
-/* Modal */
+/* モーダル（保存・閲覧ポップアップ） */
 .modal {
     position: fixed;
     top: 0;
     left: 0;
-    right: 0;
-    bottom: 0;
+    width: 100%;
+    height: 100%;
     background-color: rgba(0, 0, 0, 0.7);
     display: flex;
-    align-items: center;
     justify-content: center;
+    align-items: center;
     z-index: 1000;
-    animation: fadeIn 0.3s ease;
-}
-
-.modal.hidden {
-    display: none;
 }
 
 .modal-content {
     background-color: var(--bg-light);
     border: 1px solid var(--border);
-    border-radius: 0.5rem;
-    width: 90%;
-    max-width: 500px;
-    max-height: 90vh;
-    overflow-y: auto;
-}
-
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1.5rem;
-    border-bottom: 1px solid var(--border);
-}
-
-.modal-header h2 {
-    font-size: 1.3rem;
-}
-
-.close-btn {
-    background: none;
-    border: none;
-    color: var(--text-muted);
-    font-size: 1.5rem;
-    cursor: pointer;
-    transition: color 0.3s ease;
-}
-
-.close-btn:hover {
-    color: var(--text);
-}
-
-.modal-body {
-    padding: 1.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.modal-body input,
-.modal-body textarea {
-    padding: 0.75rem 1rem;
-    background-color: var(--bg);
-    color: var(--text);
-    border: 1px solid var(--border);
-    border-radius: 0.5rem;
-    font-family: inherit;
-}
-
-.modal-body textarea {
-    resize: vertical;
-    min-height: 100px;
-}
-
-.modal-body input:focus,
-.modal-body textarea:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.modal-footer {
-    display: flex;
-    gap: 1rem;
-    justify-content: flex-end;
-    padding: 1.5rem;
-    border-top: 1px solid var(--border);
-}
-
-.syntax-detail {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.syntax-detail pre {
-    background-color: rgba(0, 0, 0, 0.3);
-    padding: 1rem;
-    border-radius: 0.5rem;
-    overflow-x: auto;
-    border-left: 3px solid var(--primary);
-}
-
-.tags {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-}
-
-/* Responsive Design */
-@media (max-width: 640px) {
-    .header h1 {
-        font-size: 1.5rem;
-    }
-
-    .tabs {
-        gap: 0.5rem;
-    }
-
-    .tab-btn {
-        padding: 0.75rem 1rem;
-        font-size: 0.9rem;
-    }
-
-    .btn {
-        padding: 0.6rem 1.2rem;
-        font-size: 0.9rem;
-    }
-
-    .response-header {
-        flex-direction: column;
-        gap: 1rem;
-        align-items: flex-start;
-    }
-
-    .library-header {
-        flex-direction: column;
-    }
-
-    .modal-content {
-        width: 95%;
-    }
-}
-
-
-/* ============ AI回答用のコードブロック修正（追記） ============ */
-#response-content pre {
-    background-color: #1e293b !important; /* 背景をダークグレーにして見やすく */
-    color: #38bdf8 !important;            /* 文字色を読みやすい薄い青（水色）に */
-    padding: 1rem !important;
-    border-radius: 0.5rem !important;
-    overflow-x: auto !important;          /* 横に長くなってもスクロールできるように */
-    margin: 1rem 0 !important;
-    border-left: 4px solid #3b82f6 !important;
-    white-space: pre !important;          /* 💡 超重要：コードの改行とスペースを完全に維持する */
-    font-family: 'Courier New', Courier, monospace !important; /* 等幅フォントにする */
-}
-
-#response-content code {
-    font-family: 'Courier New', Courier, monospace !important;
-    background-color: rgba(59, 130, 246, 0.1);
-    color: #f43f5e;                       /* 文中の短いコードはピンク色に */
-    padding: 0.2rem 0.4rem;
-    border-radius: 0.25rem;
-    font-size: 0.9em;
-}
-
-/* コードブロックの中のコードはピンクにしない */
-#response-content pre code {
-    background-color: transparent !important;
-    color: inherit !important;
-    padding: 0 !important;
-    border-radius: 0 !important;
-    white-space: pre !important;
-}
-
-/* 箇条書きの間隔を少し広げて見やすく */
-#response-content ul {
-    margin-left: 1.5rem !important;
-    margin-bottom: 1rem !important;
-}
-
-#response-content li {
-    margin-bottom: 0.5rem !important;
-}
-
-
-/* ============ 💬 チャット風＆読みやすいコードブロックの大改造 ============ */
-
-/* 回答エリア全体をすっきりさせる */
-#response-area {
-    margin-top: 2rem;
-    background-color: var(--bg-light);
     border-radius: 1rem;
-    padding: 1.5rem;
-    border: 1px solid var(--border);
-}
-
-/* AIの回答部分をチャットの吹き出し風にする */
-#response-content {
-    color: #e2e8f0 !important;
-    line-height: 1.8 !important;
-    font-size: 1.05rem !important;
-}
-
-/* 見出し（### 部分）を読みやすく装飾 */
-#response-content h3 {
-    font-size: 1.2rem;
-    color: #38bdf8; /* 綺麗な水色 */
-    margin-top: 1.5rem;
-    margin-bottom: 0.5rem;
+    width: 90%;
+    max-width: 600px;
+    max-height: 85vh;
+    overflow-y: auto;
     display: flex;
-    align-items: center;
-    border-bottom: 1px solid #334155;
-    padding-bottom: 0.3rem;
-}
-
-/* 箇条書きを見やすく */
-#response-content ul, #response-content ol {
-    margin-left: 1.5rem;
-    margin-top: 0.5rem;
-    margin-bottom: 1rem;
-}
-
-#response-content li {
-    margin-bottom: 0.5rem;
-}
-
-/* 💻 コードブロック（``` で囲まれた部分）を完全に独立させて黒背景にする */
-#response-content pre, 
-.syntax-detail pre {
-    background-color: #0b0f19 !important; /* 深い宇宙のような黒 */
-    border: 1px solid #1e293b !important;
-    border-left: 4px solid #3b82f6 !important; /* 左側に青いアクセント線 */
-    padding: 1.2rem !important;
-    border-radius: 0.75rem !important;
-    overflow-x: auto !important;          /* スマホやiPadで横スクロール可能に */
-    margin: 1rem 0 !important;
-    white-space: pre !important;          /* 💡 改行とスペースを100%維持 */
-    display: block !important;
-}
-
-/* コードブロックの中の文字スタイル */
-#response-content pre code,
-.syntax-detail pre code {
-    font-family: 'Fira Code', 'Courier New', Courier, monospace !important;
-    font-size: 0.95rem !important;
-    color: #38bdf8 !important;            /* 読みやすい明るい水色 */
-    background-color: transparent !important;
-    padding: 0 !important;
-    border-radius: 0 !important;
-    line-height: 1.5 !important;
-    white-space: pre !important;
-}
-
-/* 文中に出てくる短いインラインコード（`a = 1` みたいなの）の装飾 */
-#response-content :not(pre) > code {
-    background-color: #1e293b !important;
-    color: #f43f5e !important;            /* 目立つようにピンク */
-    padding: 0.2rem 0.5rem !important;
-    border-radius: 0.4rem !important;
-    font-size: 0.9em !important;
-    font-family: monospace !important;
+    flex-direction: column;
 }
