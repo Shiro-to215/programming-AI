@@ -568,3 +568,82 @@ body {
 #response-content li {
     margin-bottom: 0.5rem !important;
 }
+
+
+/* ============ 💬 チャット風＆読みやすいコードブロックの大改造 ============ */
+
+/* 回答エリア全体をすっきりさせる */
+#response-area {
+    margin-top: 2rem;
+    background-color: var(--bg-light);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    border: 1px solid var(--border);
+}
+
+/* AIの回答部分をチャットの吹き出し風にする */
+#response-content {
+    color: #e2e8f0 !important;
+    line-height: 1.8 !important;
+    font-size: 1.05rem !important;
+}
+
+/* 見出し（### 部分）を読みやすく装飾 */
+#response-content h3 {
+    font-size: 1.2rem;
+    color: #38bdf8; /* 綺麗な水色 */
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #334155;
+    padding-bottom: 0.3rem;
+}
+
+/* 箇条書きを見やすく */
+#response-content ul, #response-content ol {
+    margin-left: 1.5rem;
+    margin-top: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+#response-content li {
+    margin-bottom: 0.5rem;
+}
+
+/* 💻 コードブロック（``` で囲まれた部分）を完全に独立させて黒背景にする */
+#response-content pre, 
+.syntax-detail pre {
+    background-color: #0b0f19 !important; /* 深い宇宙のような黒 */
+    border: 1px solid #1e293b !important;
+    border-left: 4px solid #3b82f6 !important; /* 左側に青いアクセント線 */
+    padding: 1.2rem !important;
+    border-radius: 0.75rem !important;
+    overflow-x: auto !important;          /* スマホやiPadで横スクロール可能に */
+    margin: 1rem 0 !important;
+    white-space: pre !important;          /* 💡 改行とスペースを100%維持 */
+    display: block !important;
+}
+
+/* コードブロックの中の文字スタイル */
+#response-content pre code,
+.syntax-detail pre code {
+    font-family: 'Fira Code', 'Courier New', Courier, monospace !important;
+    font-size: 0.95rem !important;
+    color: #38bdf8 !important;            /* 読みやすい明るい水色 */
+    background-color: transparent !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    line-height: 1.5 !important;
+    white-space: pre !important;
+}
+
+/* 文中に出てくる短いインラインコード（`a = 1` みたいなの）の装飾 */
+#response-content :not(pre) > code {
+    background-color: #1e293b !important;
+    color: #f43f5e !important;            /* 目立つようにピンク */
+    padding: 0.2rem 0.5rem !important;
+    border-radius: 0.4rem !important;
+    font-size: 0.9em !important;
+    font-family: monospace !important;
+}
