@@ -60,29 +60,27 @@ class SyntaxUpdate(BaseModel):
     tags: Optional[List[str]] = None
 
 
-# 一番上で追加のインポートを確認（無ければ get_python_syntax もインポートしてください）
-from gemini_client import create_client, get_python_syntax
+# 💡 修正：アプリ起動時にサーバー側のSQLite（syntaxes.db）を確実に初期化・自動作成する
+@app.on_event("startup")
+def startup_event():
+    try:
+        init_db()
+        print("Backend SQLite Database initialized successfully.")
+    except Exception as e:
+        print(f"Database initialization failed: {e}")
+
 
 @app.post("/api/ask")
 async def ask_syntax(query: SyntaxQuery):
-    """Ask Gemini about syntax and get response (Safe version)"""
     try:
-        # ストリーミングを使わず、一括でAIの返答を取得する
-        # get_python_syntax は同期関数なので通常通り呼び出します
-        result_text = get_python_syntax(gemini_client, query.query, query.language)
-        
-        async def generate():
-            if result_text:
-                yield f"data: {result_text}\n\n"
-
-        return StreamingResponse(generate(), media_type="text/event-stream")
+        generator = get_python_syntax_stream(gemini_client, query.query, query.language)
+        return StreamingResponse(generator, media_type="text/event-stream")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/api/syntax")
-def create_syntax(syntax: SyntaxCreate):
-    """Save a syntax to database"""
+def create_new_syntax(syntax: SyntaxCreate):
     try:
         result = save_syntax(
             title=syntax.title,
@@ -97,18 +95,15 @@ def create_syntax(syntax: SyntaxCreate):
 
 
 @app.get("/api/syntaxes")
-def get_syntaxes(language: Optional[str] = None):
-    """Get all saved syntaxes"""
+def get_syntaxes():
     try:
-        results = get_all_syntaxes(language)
-        return {"results": results}
+        return get_all_syntaxes()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/api/syntax/search")
+@app.get("/api/syntaxes/search")
 def search(q: str, language: Optional[str] = None):
-    """Search syntaxes by keyword"""
     try:
         results = search_syntaxes(q, language)
         return {"results": results}
@@ -118,7 +113,6 @@ def search(q: str, language: Optional[str] = None):
 
 @app.get("/api/syntax/{syntax_id}")
 def get_syntax(syntax_id: int):
-    """Get a specific syntax by ID"""
     try:
         syntax = get_syntax_by_id(syntax_id)
         if not syntax:
@@ -132,7 +126,6 @@ def get_syntax(syntax_id: int):
 
 @app.put("/api/syntax/{syntax_id}")
 def update_existing_syntax(syntax_id: int, syntax: SyntaxUpdate):
-    """Update an existing syntax"""
     try:
         result = update_syntax(
             syntax_id=syntax_id,
@@ -152,9 +145,12 @@ def update_existing_syntax(syntax_id: int, syntax: SyntaxUpdate):
 
 @app.delete("/api/syntax/{syntax_id}")
 def delete_existing_syntax(syntax_id: int):
-    """Delete a syntax"""
     try:
         result = delete_syntax(syntax_id)
-        return {"success": result}
+        if not result:
+            raise HTTPException(status_code=404, detail="Syntax not found")
+        return {"message": "Syntax deleted successfully"}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
