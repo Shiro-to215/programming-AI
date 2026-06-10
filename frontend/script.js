@@ -2,6 +2,12 @@
  * Main frontend application logic
  */
 
+// iPadなどでエラーが起きたときに画面にポップアップ（アラート）で警告を出すコード
+window.onerror = function(message, source, lineno, colno, error) {
+    alert("🚨 JavaScriptエラー発生:\n" + message + "\n行番号: " + lineno);
+    return false;
+};
+
 // API Base URL
 const API_BASE = '/api';
 
