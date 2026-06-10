@@ -2,12 +2,6 @@
  * Main frontend application logic
  */
 
-// iPadなどでエラーが起きたときに画面にポップアップ（アラート）で警告を出すコード
-window.onerror = function(message, source, lineno, colno, error) {
-    alert("🚨 JavaScriptエラー発生:\n" + message + "\n行番号: " + lineno);
-    return false;
-};
-
 // API Base URL
 const API_BASE = '/api';
 
@@ -42,36 +36,7 @@ let currentResponse = '';
 let currentSyntaxId = null;
 
 // Initialize
-/**
- * Main frontend application logic
- */
-
-// 💡 ここから修正：DOMが読み込まれた後に実行するようにする
 document.addEventListener('DOMContentLoaded', () => {
-
-    // API Base URL (既存のもの)
-    const API_BASE = '/api';
-
-    // DOM Elements (各要素を取得)
-    const askBtn = document.getElementById('ask-btn');
-    const saveBtn = document.getElementById('save-btn');
-    // ...他の必要なDOM要素もここに追加
-
-    // 💡 ボタンクリックのイベントを登録
-    if (askBtn) {
-        askBtn.addEventListener('click', async () => {
-            console.log("ボタンが押されました！");
-            await handleAsk(); // 既存の関数を呼び出す
-        });
-    }
-
-    // 💡 タブ切り替えのイベント
-    tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            // タブ切り替えロジック
-        });
-    });
-
     setupTabNavigation();
     setupEventListeners();
     loadSyntaxes();
@@ -159,15 +124,19 @@ async function askSyntax() {
         }
 
         const reader = response.body.getReader();
+        // 💡 修正点1: 明示的に 'utf-8' を指定してiPadでの文字化け・データ消失を防ぎます
         const decoder = new TextDecoder('utf-8');
         
+        // 「考え中」をここで消します
         loadingDiv.classList.add('hidden');
 
         while (true) {
             const { done, value } = await reader.read();
             
+            // 💡 修正点2: Safariが文字をせき止めるのを防ぐため、
+            // データが届くたびに、または通信が終わった瞬間に、バッファを強制的に吐き出させます
             if (done) {
-                const finalChunk = decoder.decode();
+                const finalChunk = decoder.decode(); // 残りの文字を強制フラッシュ
                 if (finalChunk) {
                     processIncomingData(finalChunk);
                 }
@@ -178,10 +147,32 @@ async function askSyntax() {
             processIncomingData(chunk);
         }
 
+        // 💡 届いたデータを安全に処理して画面に映すための、Safari用の補助関数
+        function processIncomingData(textData) {
+            // 前回の残りデータと結合して1行ずつ分解
+            const lines = textData.split('\n');
+            
+            for (const line of lines) {
+                // 前回設定した 「data: 」形式の目印をチェック
+                if (line.startsWith('data: ')) {
+                    currentResponse += line.slice(6);
+                } else if (line.trim() !== '' && !line.startsWith('data:')) {
+                    // 万が一「data:」がSafariのバグで削れて届いた場合の保険
+                    currentResponse += line;
+                }
+            }
+            
+            // 💡 1文字でもデータがあれば、Safariの画面を強制的に書き換えます
+            if (currentResponse) {
+                responseContent.innerHTML = renderMarkdown(currentResponse);
+            }
+        }
+
         // 全て終わったら保存ボタンを出す
         if (currentResponse) {
             saveBtn.classList.remove('hidden');
         } else {
+            // もしここまで来ても文字が空っぽだった場合の、本当の最終警告
             responseContent.innerHTML = `<p style="color: red;">⚠️ サーバーからデータは届きましたが、文字が空っぽです。GeminiのAPIキー（GEMINI_API_KEY）が正しいか確認してください。</p>`;
         }
 
@@ -195,23 +186,204 @@ async function askSyntax() {
     }
 }
 
-// 💡 バグ修正：受信したデータの改行を100%完璧に保持しながら「data: 」だけを削る高精度ロジック
-function processIncomingData(textData) {
-    if (!textData) return;
-    
-    // 行頭の「data: 」のみを正規表現で綺麗に消去し、本来の改行構造（\n）を無傷で保持します
-    const cleanText = textData.replace(/^data:\s?/gm, '');
-    currentResponse += cleanText;
-    
-    if (currentResponse) {
-        responseContent.innerHTML = renderMarkdown(currentResponse);
+
+function renderMarkdown(text) {
+    if (!text) return '';
+    try {
+        return marked.parse(text);
+    } catch (e) {
+        return text.replace(/\n/g, '<br>');
     }
 }
 
-// ============ SAVE MODAL FUNCTIONALITY ============
+// ============ SAVE SYNTAX ============
 function openSaveModal() {
-    if (!currentResponse) return;
+    // タイトルの初期値（質問文の先頭15文字など）
+    saveTitle.value = queryInput.value ? `${queryInput.value.substring(0, 15)}...` : '新しい構文';
+    
+    // 💡 AIの返答（HTMLに変換された後）から、<code>...</code> の中身だけを抽出する
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = responseContent.innerHTML;
+    const codeElement = tempDiv.querySelector('pre code');
+    
+    if (codeElement) {
+        // コードブロックが見つかったら、その中身（テキスト）だけをセット
+        // 以前エスケープされた文字（&lt; など）を元に戻すために textContent を使います
+        saveCode.value = codeElement.textContent;
+    } else {
+        // 万が一コードブロックがなかった場合は、タグを除去した全テキストをフォールバックとしてセット
+        saveCode.value = currentResponse.replace(/<[^>]*>/g, '');
+    }
+    
+    saveExplanation.value = '';
+    saveTags.value = languageSelect.value; // 初期タグに言語を設定
+    
+    saveModal.classList.remove('hidden');
+}
 
-    // AIの返答から ``` で囲まれたプログラムコード部分のみを自動抽出するロジック
-    const codeBlockRegex = /
-http://googleusercontent.com/immersive_entry_chip/0
+function closeSaveModal() {
+    saveModal.classList.add('hidden');
+}
+
+async function saveSyntax() {
+    const title = saveTitle.value.trim();
+    const code = saveCode.value.trim();
+    const explanation = saveExplanation.value.trim();
+    const tags = saveTags.value.split(',').map(t => t.trim()).filter(t => t);
+    const language = languageSelect.value;
+
+    if (!title || !code) {
+        alert('タイトルとコードは必須です');
+        return;
+    }
+
+    try {
+        // 1. まずブラウザ側（IndexedDB）に確実に保存する
+        await syntaxDB.add({
+            title,
+            language,
+            code,
+            explanation,
+            tags
+        });
+
+        // 2. サーバー（Vercel）への保存を試みる
+        // Vercel上ではSQLiteファイルへの書き込み制限で失敗する可能性が高いですが、
+        // 失敗してもキャッチ（catch）して、エラー画面を出さずにそのまま進めます
+        try {
+            await fetch(`${API_BASE}/syntax`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    title,
+                    language,
+                    code,
+                    explanation,
+                    tags
+                })
+            });
+        } catch (err) {
+            console.warn('サーバーへの同期はスキップされました（ローカルには安全に保存されています）:', err);
+        }
+
+        // 3. 画面を閉じて、ライブラリタブに切り替える
+        closeSaveModal();
+        alert('構文を保存しました！');
+        
+        const libraryTab = document.querySelector('[data-tab="library"]');
+        if (libraryTab) libraryTab.click();
+        await loadSyntaxes();
+        
+    } catch (error) {
+        console.error('Save error:', error);
+        alert('ローカルへの保存自体に失敗しました');
+    }
+}
+
+// ============ SYNTAX LIBRARY ============
+async function loadSyntaxes() {
+    try {
+        const syntaxes = await syntaxDB.getAll();
+        renderSyntaxesList(syntaxes);
+    } catch (error) {
+        console.error('Load error:', error);
+        syntaxesList.innerHTML = '<p class="empty-message">エラーが発生しました</p>';
+    }
+}
+
+async function searchSyntaxes(query) {
+    try {
+        const results = await syntaxDB.search(query);
+        renderSyntaxesList(results);
+    } catch (error) {
+        console.error('Search error:', error);
+        syntaxesList.innerHTML = '<p class="empty-message">検索に失敗しました</p>';
+    }
+}
+
+function renderSyntaxesList(syntaxes) {
+    if (syntaxes.length === 0) {
+        syntaxesList.innerHTML = '<p class="empty-message">構文がありません</p>';
+        return;
+    }
+
+    syntaxesList.innerHTML = syntaxes.map(syntax => `
+        <div class="syntax-card" onclick="viewSyntax(${syntax.id})">
+            <div class="syntax-card-title">${escapeHtml(syntax.title)}</div>
+            <div class="syntax-card-meta">
+                <span>📝 ${syntax.language}</span>
+                <span>📅 ${new Date(syntax.created_at).toLocaleDateString('ja-JP')}</span>
+            </div>
+            <div class="syntax-card-code">${escapeHtml(syntax.code)}</div>
+            ${syntax.tags.length > 0 ? `
+                <div class="syntax-card-tags">
+                    ${syntax.tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}
+                </div>
+            ` : ''}
+        </div>
+    `).join('');
+}
+
+// ============ VIEW/DELETE SYNTAX ============
+async function viewSyntax(id) {
+    try {
+        const syntax = await syntaxDB.getById(id);
+        if (!syntax) {
+            alert('構文が見つかりません');
+            return;
+        }
+
+        currentSyntaxId = id;
+
+        document.getElementById('view-title').textContent = syntax.title;
+        document.getElementById('view-language').textContent = syntax.language;
+        document.getElementById('view-date').textContent = new Date(syntax.created_at).toLocaleDateString('ja-JP');
+        document.getElementById('view-code').textContent = syntax.code;
+        document.getElementById('view-explanation').textContent = syntax.explanation || '（説明なし）';
+
+        const tagsDiv = document.getElementById('view-tags');
+        tagsDiv.innerHTML = syntax.tags.length > 0
+            ? syntax.tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('')
+            : '';
+
+        viewModal.classList.remove('hidden');
+    } catch (error) {
+        console.error('View error:', error);
+        alert('エラーが発生しました');
+    }
+}
+
+async function deleteSyntax() {
+    if (!currentSyntaxId) return;
+
+    if (confirm('この構文を削除してもよろしいですか？')) {
+        try {
+            await syntaxDB.delete(currentSyntaxId);
+            closeModals();
+            await loadSyntaxes();
+            alert('構文を削除しました');
+        } catch (error) {
+            console.error('Delete error:', error);
+            alert('削除に失敗しました');
+        }
+    }
+}
+
+// ============ UTILITIES ============
+function closeModals() {
+    saveModal.classList.add('hidden');
+    viewModal.classList.add('hidden');
+}
+
+function escapeHtml(text) {
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    };
+    return text.replace(/[&<>"']/g, m => map[m]);
+}
