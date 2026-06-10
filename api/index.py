@@ -77,6 +77,7 @@ async def ask_syntax(query: SyntaxQuery):
 
         return StreamingResponse(generate(), media_type="text/event-stream")
     except Exception as e:
+        print(f"DEBUG ERROR: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -93,6 +94,7 @@ def create_syntax(syntax: SyntaxCreate):
         )
         return result
     except Exception as e:
+        print(f"DEBUG ERROR: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -103,6 +105,7 @@ def get_syntaxes(language: Optional[str] = None):
         results = get_all_syntaxes(language)
         return {"results": results}
     except Exception as e:
+        print(f"DEBUG ERROR: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -113,6 +116,7 @@ def search(q: str, language: Optional[str] = None):
         results = search_syntaxes(q, language)
         return {"results": results}
     except Exception as e:
+        print(f"DEBUG ERROR: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -127,6 +131,7 @@ def get_syntax(syntax_id: int):
     except HTTPException:
         raise
     except Exception as e:
+        print(f"DEBUG ERROR: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -147,6 +152,7 @@ def update_existing_syntax(syntax_id: int, syntax: SyntaxUpdate):
     except HTTPException:
         raise
     except Exception as e:
+        print(f"DEBUG ERROR: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -157,4 +163,5 @@ def delete_existing_syntax(syntax_id: int):
         result = delete_syntax(syntax_id)
         return {"success": result}
     except Exception as e:
+        print(f"DEBUG ERROR: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
