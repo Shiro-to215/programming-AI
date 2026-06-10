@@ -55,13 +55,18 @@ async def get_python_syntax_stream(client, query: str, language: str = "python")
 
     prompt = f"{system_prompt}\n\nUser Question: {query}"
     
-    # 💡 修正：google-genai SDK(v0.3.0+)の非同期ストリーミング(client.aio)を正しく使用
-    response = await client.aio.models.generate_content_stream(
-        model="gemini-2.5-flash",
-        contents=prompt
-    )
-    
-    async for chunk in response:
-        if chunk.text:
-            # フロントエンドのSSE受信規格（data: ）に適合させて流し込みます
-            yield f"data: {chunk.text}\n"
+    try:
+        # ✅ 修正：非同期(aio)のストリーミング関数を使用します
+        response_stream = await client.aio.models.generate_content_stream(
+            model="gemini-2.5-flash",
+            contents=prompt
+        )
+        
+        # ✅ 修正：文字が届くたびに「data: 文字列\n\n」の形式で即座にフロント（iPad）へ流します
+        async for chunk in response_stream:
+            if chunk.text:
+                yield f"data: {chunk.text}\n\n"
+                
+    except Exception as e:
+        # エラーが起きた場合はフロントにエラーメッセージを流す
+        yield f"data: ❌ Gemini APIエラーが発生しました: {str(e)}\n\n"
