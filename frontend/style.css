@@ -1,6 +1,5 @@
-/* ============ 🚀 新・チャットAI風デザイン完全版 ============ */
+/* ============ 🚀 競プロ専用・チャットAI風デザイン完全版 ============ */
 
-/* グローバル設定 */
 * {
     margin: 0;
     padding: 0;
@@ -27,14 +26,12 @@ body {
     padding-bottom: 2rem;
 }
 
-/* コンテナ */
 .container {
     max-width: 800px;
     margin: 0 auto;
     padding: 0 1rem;
 }
 
-/* ヘッダー */
 .header {
     text-align: center;
     padding: 1.5rem 0;
@@ -55,7 +52,7 @@ body {
     font-size: 0.9rem;
 }
 
-/* タブ切り替えボタン */
+/* タブボタン */
 .tabs {
     display: flex;
     gap: 0.5rem;
@@ -94,7 +91,7 @@ body {
     display: block;
 }
 
-/* 入力エリア */
+/* 入力欄 */
 .ask-section {
     display: flex;
     flex-direction: column;
@@ -133,13 +130,6 @@ textarea {
     resize: vertical;
 }
 
-textarea:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-}
-
-/* ボタン基本 */
 .btn {
     padding: 0.75rem 1.5rem;
     border-radius: 0.5rem;
@@ -164,11 +154,11 @@ textarea:focus {
     cursor: not-allowed;
 }
 
-/* 💬 AI回答エリア（チャットUI大改造） */
+/* 💬 チャット風AI回答コンテナ */
 #response-area {
     margin-top: 1.5rem;
-    background-color: #111827; /* 暗めの背景でチャット感 */
-    border: 1px solid var(--border);
+    background-color: #0b1329; /* 深いダークネイビー（チャット背景） */
+    border: 1px solid #1e293b;
     border-radius: 1rem;
     padding: 1.5rem;
 }
@@ -177,12 +167,11 @@ textarea:focus {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1rem;
-    border-bottom: 1px solid #1f2937;
-    padding-bottom: 0.5rem;
+    margin-bottom: 1.2rem;
+    border-bottom: 1px solid #1e293b;
+    padding-bottom: 0.6rem;
 }
 
-/* ローディング（考え中） */
 #loading {
     display: flex;
     align-items: center;
@@ -195,83 +184,83 @@ textarea:focus {
     display: none !important;
 }
 
-/* 📄 マークダウン変換後のテキスト装飾 */
+/* 📄 マークダウン表示のデザイン調整 */
 #response-content {
-    color: #e5e7eb;
-    line-height: 1.8;
-    font-size: 1rem;
+    color: #f1f5f9 !important;
+    line-height: 1.8 !important;
+    font-size: 1.05rem !important;
 }
 
-/* 見出し（### の部分）を可愛く目立たせる */
+/* 見出し (###) */
 #response-content h3 {
-    font-size: 1.15rem;
-    color: #38bdf8; /* 水色 */
-    margin-top: 1.5rem;
-    margin-bottom: 0.5rem;
-    padding-bottom: 0.25rem;
-    border-bottom: 1px solid #374151;
+    font-size: 1.2rem !important;
+    color: #38bdf8 !important; /* 明るい水色 */
+    margin-top: 1.8rem !important;
+    margin-bottom: 0.6rem !important;
+    padding-bottom: 0.3rem !important;
+    border-bottom: 1px solid #1e293b !important;
+    font-weight: bold !important;
 }
 
 #response-content h3:first-child {
-    margin-top: 0;
+    margin-top: 0 !important;
 }
 
-/* 文章の段落 */
+/* 段落テキスト */
 #response-content p {
-    margin-bottom: 1rem;
-    white-space: normal; /* 👈 重なりバグを防ぐ超重要設定 */
+    margin-bottom: 1rem !important;
+    white-space: normal !important;
 }
 
 /* 箇条書き */
 #response-content ul, #response-content ol {
-    margin-left: 1.5rem;
-    margin-bottom: 1rem;
+    margin-left: 1.8rem !important;
+    margin-bottom: 1rem !important;
 }
 
 #response-content li {
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.4rem !important;
 }
 
-/* 💻 独立したコードブロック（```で囲まれた部分） */
+/* 💻 【重要】プログラム用独立コードブロック */
 #response-content pre {
-    background-color: #05070f !important; /* 真っ黒 */
-    border: 1px solid #1f2937 !important;
-    border-left: 4px solid #3b82f6 !important; /* 左の青線 */
-    padding: 1rem !important;
-    border-radius: 0.5rem !important;
-    margin: 1rem 0 !important;
+    background-color: #020617 !important; /* 完全なリッチブラック */
+    border: 1px solid #334155 !important;
+    border-left: 5px solid #3b82f6 !important; /* 左の太いアクセント青線 */
+    padding: 1.2rem !important;
+    border-radius: 0.75rem !important;
+    margin: 1.2rem 0 !important;
     
-    /* 🚨 iPadの重なり・すり抜けを絶対に防ぐ3種の神器 */
-    white-space: pre !important;         /* 改行を維持 */
-    overflow-x: auto !important;         /* 横スクロールを可能に */
-    display: block !important;           /* 縦にしっかり広げる */
+    white-space: pre !important;          /* 💡 改行を絶対維持 */
+    overflow-x: auto !important;          /* 💡 iPad横スクロール */
+    display: block !important;
     width: 100% !important;
 }
 
-/* コードブロックの中の文字スタリング */
+/* コードブロックの中の実際の文字 */
 #response-content pre code {
-    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace !important;
-    font-size: 0.9rem !important;
-    color: #34d399 !important;           /* 読みやすい黄緑・水色系 */
+    font-family: Menlo, Monaco, Consolas, 'Courier New', monospace !important; /* 読みやすい等幅 */
+    font-size: 0.95rem !important;       /* 潰れない適正サイズ */
+    color: #34d399 !important;           /* 目に優しいエメラルドグリーン */
     background: none !important;
     padding: 0 !important;
     white-space: pre !important;
-    display: inline !important;
-    word-break: normal !important;
-    word-wrap: normal !important;
+    display: block !important;           /* 縦の潰れを防ぐ */
+    line-height: 1.5 !important;
 }
 
-/* 文章中に出てくる短いコード（`a = 1` など） */
+/* 文中に出てくる短いコード（`a = 1` など） */
 #response-content :not(pre) > code {
-    background-color: #2d3748 !important;
-    color: #f43f5e !important;           /* ピンクで強調 */
-    padding: 0.2rem 0.4rem !important;
-    border-radius: 0.25rem !important;
+    background-color: #1e293b !important;
+    color: #f43f5e !important;           /* 読みやすいピンク */
+    padding: 0.15rem 0.4rem !important;
+    border-radius: 0.3rem !important;
     font-size: 0.9em !important;
     font-family: monospace !important;
+    word-break: break-word !important;
 }
 
-/* ライブラリ（一覧画面など） */
+/* 保存済みライブラリ画面 */
 .search-bar {
     margin-bottom: 1.5rem;
 }
@@ -307,7 +296,7 @@ textarea:focus {
     border-color: var(--primary);
 }
 
-/* モーダル（保存・閲覧ポップアップ） */
+/* ポップアップモーダル */
 .modal {
     position: fixed;
     top: 0;
