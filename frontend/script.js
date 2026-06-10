@@ -1,5 +1,11 @@
+/**
+ * Main frontend application logic
+ */
+
+// API Base URL
 const API_BASE = '/api';
 
+// DOM Elements
 const tabs = document.querySelectorAll('.tab-btn');
 const tabContents = document.querySelectorAll('.tab-content');
 const queryInput = document.getElementById('query');
@@ -13,6 +19,7 @@ const searchBox = document.getElementById('search-box');
 const refreshBtn = document.getElementById('refresh-btn');
 const syntaxesList = document.getElementById('syntaxes-list');
 
+// Modal Elements
 const saveModal = document.getElementById('save-modal');
 const viewModal = document.getElementById('view-modal');
 const saveTitle = document.getElementById('save-title');
@@ -24,104 +31,165 @@ const cancelSaveBtn = document.getElementById('cancel-save');
 const closeViewBtn = document.getElementById('close-view');
 const deleteSyntaxBtn = document.getElementById('delete-syntax');
 
+// State
 let currentResponse = '';
 let currentSyntaxId = null;
 
+// Initialize
 document.addEventListener('DOMContentLoaded', () => {
-    initTabs();
-    initEventListeners();
+    setupTabNavigation();
+    setupEventListeners();
     loadSyntaxes();
 });
 
-function initTabs() {
+// ============ TAB NAVIGATION ============
+function setupTabNavigation() {
     tabs.forEach(tab => {
         tab.addEventListener('click', () => {
+            const tabName = tab.dataset.tab;
+            
             tabs.forEach(t => t.classList.remove('active'));
             tabContents.forEach(c => c.classList.remove('active'));
-
+            
             tab.classList.add('active');
-            const tabId = `${tab.dataset.tab}-tab`;
-            document.getElementById(tabId).classList.add('active');
-
-            if (tab.dataset.tab === 'library') {
-                loadSyntaxes();
-            }
+            document.getElementById(`${tabName}-tab`).classList.add('active');
         });
     });
 }
 
-function initEventListeners() {
-    askBtn.addEventListener('click', askAI);
+// ============ EVENT LISTENERS ============
+function setupEventListeners() {
+    // Ask AI
+    askBtn.addEventListener('click', askSyntax);
+    queryInput.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.key === 'Enter') askSyntax();
+    });
+
+    // Save Syntax
     saveBtn.addEventListener('click', openSaveModal);
-    confirmSaveBtn.addEventListener('click', saveCurrentSyntax);
-    cancelSaveBtn.addEventListener('click', closeModals);
-    if (closeViewBtn) closeViewBtn.addEventListener('click', closeModals);
+    confirmSaveBtn.addEventListener('click', saveSyntax);
+    cancelSaveBtn.addEventListener('click', closeSaveModal);
+    document.querySelectorAll('.close-btn').forEach(btn => {
+        btn.addEventListener('click', closeModals);
+    });
+
+    // Library
+    refreshBtn.addEventListener('click', loadSyntaxes);
+    searchBox.addEventListener('input', (e) => {
+        const query = e.target.value;
+        if (query) {
+            searchSyntaxes(query);
+        } else {
+            loadSyntaxes();
+        }
+    });
+
+    // Delete Syntax
     deleteSyntaxBtn.addEventListener('click', deleteSyntax);
-    searchBox.addEventListener('input', () => loadSyntaxes());
+    closeViewBtn.addEventListener('click', closeModals);
 }
 
-async function askAI() {
+// ============ ASK AI FUNCTIONALITY ============
+async function askSyntax() {
     const query = queryInput.value.trim();
-    if (!query) return;
+    const language = languageSelect.value;
 
-    askBtn.disabled = true;
+    if (!query) {
+        alert('質問を入力してください');
+        return;
+    }
+
+    // UI初期化
+    responseArea.classList.remove('hidden');
     loadingDiv.classList.remove('hidden');
-    responseArea.classList.add('hidden');
     responseContent.innerHTML = '';
     currentResponse = '';
+    saveBtn.classList.add('hidden');
+    askBtn.disabled = true;
 
     try {
         const response = await fetch(`${API_BASE}/ask`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query: query, language: languageSelect.value })
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                query: query,
+                language: language
+            })
         });
 
-        if (!response.ok) throw new Error(`サーバーエラー (${response.status})`);
+        if (!response.ok) {
+            throw new Error(`サーバーエラー (ステータスコード: ${response.status})`);
+        }
 
         const reader = response.body.getReader();
+        // 💡 修正点1: 明示的に 'utf-8' を指定してiPadでの文字化け・データ消失を防ぎます
         const decoder = new TextDecoder('utf-8');
-        responseArea.classList.remove('hidden');
+        
+        // 「考え中」をここで消します
         loadingDiv.classList.add('hidden');
 
         while (true) {
-            const { value, done } = await reader.read();
+            const { done, value } = await reader.read();
+            
+            // 💡 修正点2: Safariが文字をせき止めるのを防ぐため、
+            // データが届くたびに、または通信が終わった瞬間に、バッファを強制的に吐き出させます
             if (done) {
-                const finalChunk = decoder.decode();
-                if (finalChunk) processStreamChunk(finalChunk);
+                const finalChunk = decoder.decode(); // 残りの文字を強制フラッシュ
+                if (finalChunk) {
+                    processIncomingData(finalChunk);
+                }
                 break;
             }
 
             const chunk = decoder.decode(value, { stream: true });
-            processStreamChunk(chunk);
+            processIncomingData(chunk);
         }
+
+        // 💡 届いたデータを安全に処理して画面に映すための、Safari用の補助関数
+        function processIncomingData(textData) {
+            // 前回の残りデータと結合して1行ずつ分解
+            const lines = textData.split('\n');
+            
+            for (const line of lines) {
+                // 前回設定した 「data: 」形式の目印をチェック
+                if (line.startsWith('data: ')) {
+                    currentResponse += line.slice(6);
+                } else if (line.trim() !== '' && !line.startsWith('data:')) {
+                    // 万が一「data:」がSafariのバグで削れて届いた場合の保険
+                    currentResponse += line;
+                }
+            }
+            
+            // 💡 1文字でもデータがあれば、Safariの画面を強制的に書き換えます
+            if (currentResponse) {
+                responseContent.innerHTML = renderMarkdown(currentResponse);
+            }
+        }
+
+        // 全て終わったら保存ボタンを出す
+        if (currentResponse) {
+            saveBtn.classList.remove('hidden');
+        } else {
+            // もしここまで来ても文字が空っぽだった場合の、本当の最終警告
+            responseContent.innerHTML = `<p style="color: red;">⚠️ サーバーからデータは届きましたが、文字が空っぽです。GeminiのAPIキー（GEMINI_API_KEY）が正しいか確認してください。</p>`;
+        }
+
     } catch (error) {
-        console.error('Fetch error:', error);
+        console.error('Error:', error);
         loadingDiv.classList.add('hidden');
-        responseArea.classList.remove('hidden');
-        responseContent.innerHTML = `<p class="error-msg">【通信エラー】${error.message}</p>`;
+        alert(`❌ エラーが発生しました\n原因: ${error.message}`);
+        responseContent.innerHTML = `<p style="color: red; font-weight: bold; padding: 10px; background: #fff3f3; border-radius: 5px;">【通信エラー】${error.message}</p>`;
     } finally {
         askBtn.disabled = false;
     }
 }
 
-function processStreamChunk(chunk) {
-    const lines = chunk.split('\n');
-    for (const line of lines) {
-        if (line.startsWith('data: ')) {
-            currentResponse += line.slice(6);
-        } else if (line.trim() !== '' && !line.startsWith('data:')) {
-            currentResponse += line;
-        }
-    }
-    if (currentResponse) {
-        responseContent.innerHTML = renderMarkdown(currentResponse);
-        saveBtn.classList.remove('hidden');
-    }
-}
-
+// ============ SAVE MODAL FUNCTIONALITY ============
 function openSaveModal() {
     if (!currentResponse) return;
-    
+
+    // AIの返答から ``` で囲まれたプログラムコード部分のみを自動抽出するロジックを安全に追加
     const codeBlockRegex = /
 http://googleusercontent.com/immersive_entry_chip/0
