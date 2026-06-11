@@ -29,10 +29,12 @@ async def get_python_syntax_stream(client, query: str, language: str = "python")
     
     models = ["gemini-2.5-flash", "gemini-3.1-flash-lite"]
     
-    for model_name in models:
+    for i, model_name in enumerate(models):
         try:
-            # 修正箇所: ここにあった await を削除しました！
-            # APIのストリーム関数は await なしでそのまま async for に渡すのが正しい書き方です。
+            # 【対策1】モデル切り替え時に画面へ通知し、ユーザーにフリーズではないことを伝える
+            if i > 0:
+                yield f"data: \n\n⚠️ *混雑しているため、別のAI({model_name})に切り替えて再試行しています...*\n\n"
+
             response_stream = client.aio.models.generate_content_stream(
                 model=model_name,
                 contents=prompt
@@ -40,15 +42,18 @@ async def get_python_syntax_stream(client, query: str, language: str = "python")
             
             async for chunk in response_stream:
                 if chunk.text:
-                    yield f"data: {chunk.text}\n\n"
+                    # 【対策2】文章内の「改行」で画面側のJSがエラーを起こし、ボタンがロックするのを防ぐ
+                    safe_text = chunk.text.replace("\n", "\ndata: ")
+                    yield f"data: {safe_text}\n\n"
             
             return 
 
         except Exception as e:
             error_str = str(e)
-            if model_name != models[-1]:
+            if i != len(models) - 1:
                 continue
             else:
+                # 全てのモデルがダメだった場合は確実にエラーを返して終了させる
                 yield f"data: ❌ エラーが発生しました ({model_name}): {error_str}\n\n"
     
     yield "data: ❌ 全てのモデルでエラーが発生しました。\n\n"
