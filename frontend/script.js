@@ -105,6 +105,8 @@ async function askSyntax() {
     responseContent.innerHTML = '';
     currentResponse = '';
     saveBtn.classList.add('hidden');
+    
+    // ここでボタンをロックします（連打防止）
     askBtn.disabled = true;
 
     try {
@@ -124,19 +126,15 @@ async function askSyntax() {
         }
 
         const reader = response.body.getReader();
-        // 💡 修正点1: 明示的に 'utf-8' を指定してiPadでの文字化け・データ消失を防ぎます
         const decoder = new TextDecoder('utf-8');
         
-        // 「考え中」をここで消します
         loadingDiv.classList.add('hidden');
 
         while (true) {
             const { done, value } = await reader.read();
             
-            // 💡 修正点2: Safariが文字をせき止めるのを防ぐため、
-            // データが届くたびに、または通信が終わった瞬間に、バッファを強制的に吐き出させます
             if (done) {
-                const finalChunk = decoder.decode(); // 残りの文字を強制フラッシュ
+                const finalChunk = decoder.decode();
                 if (finalChunk) {
                     processIncomingData(finalChunk);
                 }
@@ -147,22 +145,17 @@ async function askSyntax() {
             processIncomingData(chunk);
         }
 
-        // 💡 届いたデータを安全に処理して画面に映すための、Safari用の補助関数
         function processIncomingData(textData) {
-            // 前回の残りデータと結合して1行ずつ分解
             const lines = textData.split('\n');
             
             for (const line of lines) {
-                // 前回設定した 「data: 」形式の目印をチェック
                 if (line.startsWith('data: ')) {
                     currentResponse += line.slice(6);
                 } else if (line.trim() !== '' && !line.startsWith('data:')) {
-                    // 万が一「data:」がSafariのバグで削れて届いた場合の保険
                     currentResponse += line;
                 }
             }
             
-            // 💡 1文字でもデータがあれば、Safariの画面を強制的に書き換えます
             if (currentResponse) {
                 responseContent.innerHTML = renderMarkdown(currentResponse);
             }
@@ -172,7 +165,6 @@ async function askSyntax() {
         if (currentResponse) {
             saveBtn.classList.remove('hidden');
         } else {
-            // もしここまで来ても文字が空っぽだった場合の、本当の最終警告
             responseContent.innerHTML = `<p style="color: red;">⚠️ サーバーからデータは届きましたが、文字が空っぽです。GeminiのAPIキー（GEMINI_API_KEY）が正しいか確認してください。</p>`;
         }
 
@@ -180,7 +172,6 @@ async function askSyntax() {
         console.error('Error:', error);
         loadingDiv.classList.add('hidden');
         
-        // 💡 429 エラーの時の特別なメッセージ
         if (error.message.includes('429')) {
             alert("⚠️ API制限に達しました。\n無料枠の上限（1日20回）を超えたようです。明日まで待つか、APIキーの設定を見直してください。");
         } else {
@@ -188,6 +179,9 @@ async function askSyntax() {
         }
         
         responseContent.innerHTML = `<p style="color: red; font-weight: bold;">通信エラーが発生しました。</p>`;
+    } finally {
+        // 💡 追加修正：成功してもエラーになっても、最後に必ずボタンのロックを解除する！
+        askBtn.disabled = false;
     }
 }
 
@@ -203,25 +197,20 @@ function renderMarkdown(text) {
 
 // ============ SAVE SYNTAX ============
 function openSaveModal() {
-    // タイトルの初期値（質問文の先頭15文字など）
     saveTitle.value = queryInput.value ? `${queryInput.value.substring(0, 15)}...` : '新しい構文';
     
-    // 💡 AIの返答（HTMLに変換された後）から、<code>...</code> の中身だけを抽出する
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = responseContent.innerHTML;
     const codeElement = tempDiv.querySelector('pre code');
     
     if (codeElement) {
-        // コードブロックが見つかったら、その中身（テキスト）だけをセット
-        // 以前エスケープされた文字（&lt; など）を元に戻すために textContent を使います
         saveCode.value = codeElement.textContent;
     } else {
-        // 万が一コードブロックがなかった場合は、タグを除去した全テキストをフォールバックとしてセット
         saveCode.value = currentResponse.replace(/<[^>]*>/g, '');
     }
     
     saveExplanation.value = '';
-    saveTags.value = languageSelect.value; // 初期タグに言語を設定
+    saveTags.value = languageSelect.value;
     
     saveModal.classList.remove('hidden');
 }
@@ -243,7 +232,6 @@ async function saveSyntax() {
     }
 
     try {
-        // 1. まずブラウザ側（IndexedDB）に確実に保存する
         await syntaxDB.add({
             title,
             language,
@@ -252,9 +240,6 @@ async function saveSyntax() {
             tags
         });
 
-        // 2. サーバー（Vercel）への保存を試みる
-        // Vercel上ではSQLiteファイルへの書き込み制限で失敗する可能性が高いですが、
-        // 失敗してもキャッチ（catch）して、エラー画面を出さずにそのまま進めます
         try {
             await fetch(`${API_BASE}/syntax`, {
                 method: 'POST',
@@ -273,7 +258,6 @@ async function saveSyntax() {
             console.warn('サーバーへの同期はスキップされました（ローカルには安全に保存されています）:', err);
         }
 
-        // 3. 画面を閉じて、ライブラリタブに切り替える
         closeSaveModal();
         alert('構文を保存しました！');
         
