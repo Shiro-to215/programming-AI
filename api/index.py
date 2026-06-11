@@ -13,7 +13,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 
 # 同じフォルダからインポート
-from gemini_client import create_client, get_python_syntax_stream
+from gemini_client import create_client, get_python_syntax_stream, get_python_syntax
 from database import (
     init_db, save_syntax, get_all_syntaxes, search_syntaxes, 
     get_syntax_by_id, update_syntax, delete_syntax
@@ -67,13 +67,15 @@ from gemini_client import create_client, get_python_syntax
 async def ask_syntax(query: SyntaxQuery):
     """Ask Gemini about syntax and get response (Safe version)"""
     try:
-        # ストリーミングを使わず、一括でAIの返答を取得する
-        # get_python_syntax は同期関数なので通常通り呼び出します
+        # 新しい同期ラッパー経由で呼び出す（これでモデル切り替えが有効になります）
+        # ※バックグラウンドで同期的に処理されるため、返り値を待ってからyieldします
         result_text = get_python_syntax(gemini_client, query.query, query.language)
         
         async def generate():
             if result_text:
-                yield f"data: {result_text}\n\n"
+                # 戻り値に「data: 」が含まれている場合があるため調整
+                text = str(result_text).replace("data: ", "")
+                yield f"data: {text}\n\n"
 
         return StreamingResponse(generate(), media_type="text/event-stream")
     except Exception as e:
