@@ -65,17 +65,14 @@ from gemini_client import create_client, get_python_syntax
 
 @app.post("/api/ask")
 async def ask_syntax(query: SyntaxQuery):
-    """Ask Gemini about syntax and get response (Safe version)"""
+    """Ask Gemini about syntax (Full Async version)"""
     try:
-        # 新しい同期ラッパー経由で呼び出す（これでモデル切り替えが有効になります）
-        # ※バックグラウンドで同期的に処理されるため、返り値を待ってからyieldします
-        result_text = get_python_syntax(gemini_client, query.query, query.language)
-        
+        # get_python_syntax_stream を直接 await して生成器を取得する
         async def generate():
-            if result_text:
-                # 戻り値に「data: 」が含まれている場合があるため調整
-                text = str(result_text).replace("data: ", "")
-                yield f"data: {text}\n\n"
+            # stream を直接回す
+            stream = get_python_syntax_stream(gemini_client, query.query, query.language)
+            async for chunk in stream:
+                yield chunk
 
         return StreamingResponse(generate(), media_type="text/event-stream")
     except Exception as e:
