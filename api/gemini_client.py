@@ -27,11 +27,11 @@ async def get_python_syntax_stream(client, query: str, language: str = "python")
 
     prompt = f"{system_prompt}\n\nUser Question: {query}"
     
-    # 使用するモデルのリスト（Flash Lite を優先またはフォールバックとして設定）
+    # 使用するモデルのリスト
     models = ["gemini-2.5-flash", "gemini-3.1-flash-lite"]
     
     for model_name in models:
-        max_retries = 2 # モデルごとの再試行回数
+        max_retries = 2
         for attempt in range(max_retries):
             try:
                 response = await client.aio.models.generate_content_stream(
@@ -43,22 +43,18 @@ async def get_python_syntax_stream(client, query: str, language: str = "python")
                     if chunk.text:
                         yield f"data: {chunk.text}\n\n"
                 
-                return # 成功したら終了
+                return # ループを正常終了して終了
 
             except Exception as e:
                 error_str = str(e)
-                # 429(制限)や503(混雑)の場合はリトライ、または次のモデルへ
                 if ("429" in error_str or "503" in error_str):
                     if attempt < max_retries - 1:
                         await asyncio.sleep(2 * (attempt + 1))
                         continue
                     else:
-                        # このモデルでの再試行が尽きたので、次のモデルへ
-                        break 
+                        break # 次のモデルへ
                 else:
-                    # その他の致命的なエラーは即時終了
                     yield f"data: ❌ エラーが発生しました ({model_name}): {error_str}\n\n"
                     return
     
-    # 全モデルで失敗した場合
     yield f"data: ❌ 全てのモデルでエラーが発生しました。時間を置いて再度お試しください。\n\n"
