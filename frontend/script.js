@@ -90,99 +90,59 @@ function setupEventListeners() {
 }
 
 // ============ ASK AI FUNCTIONALITY ============
+// ... 省略 ...
+
 async function askSyntax() {
     const query = queryInput.value.trim();
-    const language = languageSelect.value;
+    if (!query) return;
 
-    if (!query) {
-        alert('質問を入力してください');
-        return;
-    }
-
-    // UI初期化
-    responseArea.classList.remove('hidden');
-    loadingDiv.classList.remove('hidden');
-    responseContent.innerHTML = '';
-    currentResponse = '';
-    saveBtn.classList.add('hidden');
-    
-    // ここでボタンをロックします（連打防止）
+    // ユーザーの質問を履歴に追加
+    addMessage(query, 'user');
+    queryInput.value = '';
     askBtn.disabled = true;
 
+    // AIの回答用の空枠を作成
+    const aiMessageDiv = addMessage('', 'ai');
+    
     try {
         const response = await fetch(`${API_BASE}/ask`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                query: query,
-                language: language
-            })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: query, language: languageSelect.value })
         });
-
-        if (!response.ok) {
-            throw new Error(`サーバーエラー (ステータスコード: ${response.status})`);
-        }
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder('utf-8');
-        
-        loadingDiv.classList.add('hidden');
+        let fullText = '';
 
         while (true) {
             const { done, value } = await reader.read();
+            if (done) break;
             
-            if (done) {
-                const finalChunk = decoder.decode();
-                if (finalChunk) {
-                    processIncomingData(finalChunk);
-                }
-                break;
-            }
-
             const chunk = decoder.decode(value, { stream: true });
-            processIncomingData(chunk);
+            // ストリーム処理（改行対策など）
+            fullText += chunk.replace(/data: /g, '');
+            aiMessageDiv.innerHTML = renderMarkdown(fullText);
+            // 自動スクロール
+            const chatHistory = document.getElementById('chat-history');
+            chatHistory.scrollTop = chatHistory.scrollHeight;
         }
-
-        function processIncomingData(textData) {
-            const lines = textData.split('\n');
-            
-            for (const line of lines) {
-                if (line.startsWith('data: ')) {
-                    currentResponse += line.slice(6);
-                } else if (line.trim() !== '' && !line.startsWith('data:')) {
-                    currentResponse += line;
-                }
-            }
-            
-            if (currentResponse) {
-                responseContent.innerHTML = renderMarkdown(currentResponse);
-            }
-        }
-
-        // 全て終わったら保存ボタンを出す
-        if (currentResponse) {
-            saveBtn.classList.remove('hidden');
-        } else {
-            responseContent.innerHTML = `<p style="color: red;">⚠️ サーバーからデータは届きましたが、文字が空っぽです。GeminiのAPIキー（GEMINI_API_KEY）が正しいか確認してください。</p>`;
-        }
-
     } catch (error) {
-        console.error('Error:', error);
-        loadingDiv.classList.add('hidden');
-        
-        if (error.message.includes('429')) {
-            alert("⚠️ API制限に達しました。\n無料枠の上限（1日20回）を超えたようです。明日まで待つか、APIキーの設定を見直してください。");
-        } else {
-            alert(`❌ エラーが発生しました\n原因: ${error.message}`);
-        }
-        
-        responseContent.innerHTML = `<p style="color: red; font-weight: bold;">通信エラーが発生しました。</p>`;
+        aiMessageDiv.innerHTML = `<p style="color:red">エラー: ${error.message}</p>`;
     } finally {
-        // 💡 追加修正：成功してもエラーになっても、最後に必ずボタンのロックを解除する！
         askBtn.disabled = false;
     }
+}
+
+// メッセージ追加用のヘルパー関数
+function addMessage(text, sender) {
+    const chatHistory = document.getElementById('chat-history');
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `message ${sender}-message`;
+    if (text) msgDiv.innerHTML = renderMarkdown(text);
+    chatHistory.appendChild(msgDiv);
+    chatHistory.scrollTop = chatHistory.scrollHeight;
+    return msgDiv;
 }
 
 
