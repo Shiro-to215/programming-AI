@@ -62,9 +62,3 @@ async def get_python_syntax_stream(client, query: str, language: str = "python")
     
     # 全モデルで失敗した場合
     yield f"data: ❌ 全てのモデルでエラーが発生しました。時間を置いて再度お試しください。\n\n"
-
-
-# gemini_client.py の最後に追加
-def get_python_syntax(client, query: str, language: str = "python"):
-    """非同期版を同期的に呼び出すラッパー（既存コードとの互換性用）"""
-    return asyncio.run(get_python_syntax_stream(client, query, language))
