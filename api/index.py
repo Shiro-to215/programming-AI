@@ -63,10 +63,6 @@ class SyntaxUpdate(BaseModel):
     explanation: Optional[str] = None
     tags: Optional[List[str]] = None
 
-
-# 一番上で追加のインポートを確認（無ければ get_python_syntax もインポートしてください）
-from gemini_client import create_client, get_python_syntax
-
 @app.post("/api/ask")
 async def ask_syntax(query: SyntaxQuery):
     """Ask Gemini about syntax (Full Async version)"""
