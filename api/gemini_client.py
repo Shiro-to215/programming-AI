@@ -31,30 +31,26 @@ async def get_python_syntax_stream(client, query: str, language: str = "python")
     models = ["gemini-2.5-flash", "gemini-3.1-flash-lite"]
     
     for model_name in models:
-        max_retries = 2
-        for attempt in range(max_retries):
-            try:
-                response = await client.aio.models.generate_content_stream(
-                    model=model_name,
-                    contents=prompt
-                )
-                
-                async for chunk in response:
-                    if chunk.text:
-                        yield f"data: {chunk.text}\n\n"
-                
-                return # ループを正常終了して終了
+        try:
+            response = await client.aio.models.generate_content_stream(
+                model=model_name,
+                contents=prompt
+            )
+            
+            async for chunk in response:
+                if chunk.text:
+                    yield f"data: {chunk.text}\n\n"
+            
+            # 正常終了したらループを抜けて終了
+            return 
 
-            except Exception as e:
-                error_str = str(e)
-                if ("429" in error_str or "503" in error_str):
-                    if attempt < max_retries - 1:
-                        await asyncio.sleep(2 * (attempt + 1))
-                        continue
-                    else:
-                        break # 次のモデルへ
-                else:
-                    yield f"data: ❌ エラーが発生しました ({model_name}): {error_str}\n\n"
-                    return
+        except Exception as e:
+            error_str = str(e)
+            # エラーが最後（リストの最後）のモデルでなければ次のループへ
+            if model_name != models[-1]:
+                continue
+            else:
+                # 最後のモデルでもダメならエラーを流す
+                yield f"data: ❌ エラーが発生しました ({model_name}): {error_str}\n\n"
     
-    yield f"data: ❌ 全てのモデルでエラーが発生しました。時間を置いて再度お試しください。\n\n"
+    yield "data: ❌ 全てのモデルでエラーが発生しました。\n\n"
