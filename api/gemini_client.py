@@ -27,7 +27,6 @@ async def get_python_syntax_stream(client, query: str, language: str = "python")
 
     prompt = f"{system_prompt}\n\nUser Question: {query}"
     
-    # 使用するモデルのリスト
     models = ["gemini-2.5-flash", "gemini-3.1-flash-lite"]
     
     for model_name in models:
@@ -41,16 +40,13 @@ async def get_python_syntax_stream(client, query: str, language: str = "python")
                 if chunk.text:
                     yield f"data: {chunk.text}\n\n"
             
-            # 正常終了したらループを抜けて終了
             return 
 
         except Exception as e:
             error_str = str(e)
-            # エラーが最後（リストの最後）のモデルでなければ次のループへ
             if model_name != models[-1]:
                 continue
             else:
-                # 最後のモデルでもダメならエラーを流す
                 yield f"data: ❌ エラーが発生しました ({model_name}): {error_str}\n\n"
     
     yield "data: ❌ 全てのモデルでエラーが発生しました。\n\n"
