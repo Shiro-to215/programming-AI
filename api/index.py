@@ -6,7 +6,6 @@ import sys
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, current_dir)
 
-# --- 修正後のインポート部分 ---
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,19 +13,14 @@ from pydantic import BaseModel
 from typing import List, Optional
 import os
 
-# gemini_client からはこれだけをインポートする
 from gemini_client import create_client, get_python_syntax_stream
-
 from database import (
     init_db, save_syntax, get_all_syntaxes, search_syntaxes, 
     get_syntax_by_id, update_syntax, delete_syntax
 )
-# ----------------------------
 
-# 一番外側の左端で定義
 app = FastAPI(title="Programming AI Assistant")
 
-# Add CORS middleware for frontend access
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -35,7 +29,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize Gemini client
 api_key = os.getenv("GEMINI_API_KEY")
 if not api_key:
     raise ValueError("GEMINI_API_KEY environment variable not set")
@@ -43,7 +36,6 @@ if not api_key:
 gemini_client = create_client(api_key)
 
 
-# Pydantic models
 class SyntaxQuery(BaseModel):
     query: str
     language: str = "python"
@@ -63,37 +55,37 @@ class SyntaxUpdate(BaseModel):
     explanation: Optional[str] = None
     tags: Optional[List[str]] = None
 
-@app.post("/api/ask")
-async def ask_syntax(query: SyntaxQuery):
-    """Ask Gemini about syntax (Full Async version)"""
-    try:
-        # ここに await を追加します
-        stream = await get_python_syntax_stream(gemini_client, query.query, query.language)
-        
-        # 非同期ジェネレータをそのまま渡す
-        return StreamingResponse(stream, media_type="text/event-stream")
-        
-    except Exception as e:
-        print(f"DEBUG ERROR: {str(e)}")
-        # ユーザーに表示されるエラーメッセージ
-        return StreamingResponse(iter([f"data: ❌ エラーが発生しました: {str(e)}\n\n"]), media_type="text/event-stream")
 
 @app.post("/api/ask")
 async def ask_syntax(query: SyntaxQuery):
     """Ask Gemini about syntax (Full Async version)"""
     try:
-        # ❌ await を削除する。get_python_syntax_stream は非同期ジェネレータを返す関数そのもの。
-        # 実行結果を待つのではなく、ストリーム自体を StreamingResponse に渡す。
+        # await なしで呼び出し、そのまま渡すのが正解です
         stream = get_python_syntax_stream(gemini_client, query.query, query.language)
-        
         return StreamingResponse(stream, media_type="text/event-stream")
         
     except Exception as e:
         print(f"DEBUG ERROR: {str(e)}")
-        # エラー時は空のジェネレータを返してエラー内容を伝える
         async def error_generator():
             yield f"data: ❌ エラーが発生しました: {str(e)}\n\n"
         return StreamingResponse(error_generator(), media_type="text/event-stream")
+
+
+@app.post("/api/syntax")
+def create_syntax(syntax: SyntaxCreate):
+    """Save a syntax to database"""
+    try:
+        result = save_syntax(
+            title=syntax.title,
+            language=syntax.language,
+            code=syntax.code,
+            explanation=syntax.explanation,
+            tags=syntax.tags
+        )
+        return result
+    except Exception as e:
+        print(f"DEBUG ERROR: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/syntaxes")
