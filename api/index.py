@@ -67,14 +67,13 @@ from gemini_client import create_client, get_python_syntax
 async def ask_syntax(query: SyntaxQuery):
     """Ask Gemini about syntax (Full Async version)"""
     try:
-        # get_python_syntax_stream を直接 await して生成器を取得する
-        async def generate():
-            # stream を直接回す
-            stream = get_python_syntax_stream(gemini_client, query.query, query.language)
-            async for chunk in stream:
-                yield chunk
-
-        return StreamingResponse(generate(), media_type="text/event-stream")
+        # ここで直接 stream を取得します
+        stream = get_python_syntax_stream(gemini_client, query.query, query.language)
+        
+        # この stream 自体は非同期ジェネレータなので、
+        # StreamingResponse にはそのまま渡すか、あるいは yield する必要があります
+        return StreamingResponse(stream, media_type="text/event-stream")
+        
     except Exception as e:
         print(f"DEBUG ERROR: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
