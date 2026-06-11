@@ -24,32 +24,15 @@
 
             <!-- Tab 1: Ask AI -->
             <section id="ask-tab" class="tab-content active">
-                <div class="ask-section">
-                    <div class="language-selector">
-                        <label for="language">言語:</label>
-                        <select id="language">
-                            <option value="python">Python</option>
-                            <option value="cpp">C++</option>
-                        </select>
-                    </div>
+                <div id="chat-history" class="chat-history"></div>
 
-                    <div class="input-area">
-                        <textarea id="query" placeholder="例: 二分探索のやり方を教えて" rows="3"></textarea>
-                        <button id="ask-btn" class="btn btn-primary">✨ 構文を聞く</button>
-                    </div>
-
-                    <!-- Response Area -->
-                    <div id="response-area" class="response-area hidden">
-                        <div class="response-header">
-                            <h3>AI の回答</h3>
-                            <button id="save-btn" class="btn btn-secondary">💾 保存</button>
-                        </div>
-                        <div id="response-content" class="response-content"></div>
-                        <div id="loading" class="loading hidden">
-                            <div class="spinner"></div>
-                            <p>考え中...</p>
-                        </div>
-                    </div>
+                <div class="input-area">
+                    <select id="language">
+                        <option value="python">Python</option>
+                        <option value="cpp">C++</option>
+                    </select>
+                    <textarea id="query" placeholder="例: 二分探索のやり方を教えて" rows="2"></textarea>
+                    <button id="ask-btn" class="btn btn-primary">送信</button>
                 </div>
             </section>
 
