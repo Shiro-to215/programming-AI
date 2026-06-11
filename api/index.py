@@ -67,9 +67,8 @@ class SyntaxUpdate(BaseModel):
 async def ask_syntax(query: SyntaxQuery):
     """Ask Gemini about syntax (Full Async version)"""
     try:
-        # ❌ 誤り: stream = await get_python_syntax_stream(...)  <-- await があるとダメ
-        # ✅ 正解: await を付けずに呼び出す
-        stream = get_python_syntax_stream(gemini_client, query.query, query.language)
+        # ここに await を追加します
+        stream = await get_python_syntax_stream(gemini_client, query.query, query.language)
         
         # 非同期ジェネレータをそのまま渡す
         return StreamingResponse(stream, media_type="text/event-stream")
@@ -78,7 +77,6 @@ async def ask_syntax(query: SyntaxQuery):
         print(f"DEBUG ERROR: {str(e)}")
         # ユーザーに表示されるエラーメッセージ
         return StreamingResponse(iter([f"data: ❌ エラーが発生しました: {str(e)}\n\n"]), media_type="text/event-stream")
-
 
 @app.post("/api/syntax")
 def create_syntax(syntax: SyntaxCreate):
