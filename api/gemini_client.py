@@ -31,12 +31,14 @@ async def get_python_syntax_stream(client, query: str, language: str = "python")
     
     for model_name in models:
         try:
-            response = await client.aio.models.generate_content_stream(
+            # 修正箇所: ここにあった await を削除しました！
+            # APIのストリーム関数は await なしでそのまま async for に渡すのが正しい書き方です。
+            response_stream = client.aio.models.generate_content_stream(
                 model=model_name,
                 contents=prompt
             )
             
-            async for chunk in response:
+            async for chunk in response_stream:
                 if chunk.text:
                     yield f"data: {chunk.text}\n\n"
             
