@@ -1,4 +1,5 @@
 """Gemini API client for competitive programming syntax assistance"""
+import asyncio
 from google import genai
 
 def create_client(api_key: str):
@@ -55,10 +56,27 @@ async def get_python_syntax_stream(client, query: str, language: str = "python")
 
     prompt = f"{system_prompt}\n\nUser Question: {query}"
     
-    response = await client.aio.models.generate_content_stream(
-        model="gemini-2.5-flash",
-        contents=prompt
-    )
-    
-    for chunk in response:
-        yield chunk.text
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            response = await client.aio.models.generate_content_stream(
+                model="gemini-2.5-flash",
+                contents=prompt
+            )
+            
+            async for chunk in response: # 3. awaitの戻り値を非同期ループで処理
+                if chunk.text:
+                    yield f"data: {chunk.text}\n\n"
+            return # 成功したらループを抜けて終了
+
+        except Exception as e:
+            error_str = str(e)
+            # 503エラー(混雑)または429エラー(制限)の場合のみリトライ
+            if ("503" in error_str or "429" in error_str) and attempt < max_retries - 1:
+                wait_time = 2 * (attempt + 1) # 待機時間を増やす
+                await asyncio.sleep(wait_time)
+                continue
+            else:
+                # 最終的に失敗した場合、フロントエンドにエラーを伝える
+                yield f"data: ❌ エラーが発生しました: {error_str}\n\n"
+                break
