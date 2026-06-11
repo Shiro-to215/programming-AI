@@ -1,10 +1,10 @@
-Programming AI - 競プロ構文アシスタント
+**Programming AI - 競プロ構文アシスタント**
 
 Python・C++の構文を高速に質問できるAIアシスタント。Gemini 2.5 Flash / Gemini 3.1 Flash Liteを使用した軽量でレスポンシブなWebアプリです。
 
-✨ 機能
+**✨ 機能**
 
-- 快速応答: Gemini 2.5 Flashで超高速な構文提案
+- **快速応答**: Gemini 2.5 Flashで超高速な構文提案
 - **構文保存**: よく使う構文をローカルに保存
 - **構文検索**: 保存した構文から素早く検索
 - **オフライン対応**: IndexedDB/LocalStorageで完全オフライン機能
