@@ -6,18 +6,22 @@ import sys
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, current_dir)
 
+# --- 修正後のインポート部分 ---
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
+import os
 
-# 同じフォルダからインポート
-from gemini_client import create_client, get_python_syntax_stream, get_python_syntax
+# gemini_client からはこれだけをインポートする
+from gemini_client import create_client, get_python_syntax_stream
+
 from database import (
     init_db, save_syntax, get_all_syntaxes, search_syntaxes, 
     get_syntax_by_id, update_syntax, delete_syntax
 )
+# ----------------------------
 
 # 一番外側の左端で定義
 app = FastAPI(title="Programming AI Assistant")
